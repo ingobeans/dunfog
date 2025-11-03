@@ -1,7 +1,4 @@
-use macroquad::{
-    miniquad::{BlendFactor, BlendState, BlendValue, Equation},
-    prelude::*,
-};
+use macroquad::prelude::*;
 
 pub const SCREEN_WIDTH: f32 = 256.0;
 pub const SCREEN_HEIGHT: f32 = 144.0;
