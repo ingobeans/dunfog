@@ -18,37 +18,25 @@ impl Dungeon {
         let mut tiles =
             vec![vec![Tile::Wall; SCREEN_WIDTH as usize / 8]; SCREEN_HEIGHT as usize / 8];
 
-        let rooms_amt = 3;
+        let mut area_left = 5 * 5 * 5;
         let mut rooms: Vec<(usize, usize, usize, usize)> = Vec::new();
-        for _ in 0..rooms_amt {
-            let (mut x, mut y, mut w, mut h) = (0, 0, 0, 0);
-            loop {
-                w = rand::gen_range(4, 6);
-                h = rand::gen_range(4, 6);
-                x = rand::gen_range(0, SCREEN_WIDTH as usize / 8);
-                y = rand::gen_range(0, SCREEN_HEIGHT as usize / 8);
-                if x + w >= SCREEN_WIDTH as usize / 8 {
-                    x = SCREEN_WIDTH as usize / 8 - w - 1;
-                }
-                if y + h >= SCREEN_HEIGHT as usize / 8 {
-                    y = SCREEN_HEIGHT as usize / 8 - h - 1;
-                }
-
-                let mut collide = false;
-                for (other_x, other_y, other_w, other_h) in &rooms {
-                    if ((other_x..&(other_x + other_w)).contains(&&x)
-                        && (other_y..&(other_y + other_h)).contains(&&y))
-                        || ((other_x..&(other_x + other_w)).contains(&&(x + w))
-                            && (other_y..&(other_y + other_h)).contains(&&(y + h)))
-                    {
-                        collide = true;
-                        break;
-                    }
-                }
-                if !collide {
-                    break;
-                }
+        loop {
+            let w = rand::gen_range(4, 6);
+            let h = rand::gen_range(4, 6);
+            let mut x = rand::gen_range(0, SCREEN_WIDTH as usize / 8);
+            let mut y = rand::gen_range(0, SCREEN_HEIGHT as usize / 8);
+            if x + w >= SCREEN_WIDTH as usize / 8 {
+                x = SCREEN_WIDTH as usize / 8 - w - 1;
             }
+            if y + h >= SCREEN_HEIGHT as usize / 8 {
+                y = SCREEN_HEIGHT as usize / 8 - h - 1;
+            }
+            let area = w * h;
+            if area > area_left {
+                break;
+            }
+            area_left -= area;
+
             rooms.push((x, y, w, h));
         }
         for (x, y, w, h) in rooms.into_iter() {
