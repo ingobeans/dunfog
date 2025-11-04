@@ -14,10 +14,7 @@ enum Tile {
 
 impl Tile {
     fn is_walkable(self) -> bool {
-        match self {
-            Tile::Floor | Tile::Path => true,
-            _ => false,
-        }
+        matches!(self, Tile::Floor | Tile::Path)
     }
     fn get_tile(self) -> (f32, f32) {
         #[expect(unreachable_patterns)]
@@ -94,14 +91,12 @@ impl Dungeon {
                     } else {
                         current_x -= 1;
                     }
+                } else if current_y == target_y {
+                    moving_horizontal = true;
+                } else if current_y < target_y {
+                    current_y += 1;
                 } else {
-                    if current_y == target_y {
-                        moving_horizontal = true;
-                    } else if current_y < target_y {
-                        current_y += 1;
-                    } else {
-                        current_y -= 1;
-                    }
+                    current_y -= 1;
                 }
                 if positions.contains(&(current_x, current_y)) {
                     break;

@@ -1,4 +1,3 @@
-use crate::utils::*;
 use macroquad::prelude::*;
 
 pub struct Player {
