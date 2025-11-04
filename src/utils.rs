@@ -5,6 +5,9 @@ use crate::Tile;
 pub const SCREEN_WIDTH: f32 = 256.0;
 pub const SCREEN_HEIGHT: f32 = 144.0;
 
+pub const SCROLL_AMT: f32 = 1.1;
+pub const MIN_ZOOM: f32 = 0.001;
+
 pub const TILES_HORIZONTAL: usize = SCREEN_WIDTH as usize / 8;
 pub const TILES_VERTICAL: usize = SCREEN_HEIGHT as usize / 8;
 

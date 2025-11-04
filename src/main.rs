@@ -97,8 +97,7 @@ impl Dungeon {
                 } else {
                     if current_y == target_y {
                         moving_horizontal = true;
-                    }
-                    if current_y < target_y {
+                    } else if current_y < target_y {
                         current_y += 1;
                     } else {
                         current_y -= 1;
@@ -132,11 +131,44 @@ async fn main() {
     let mut player = entities::Player::default();
     (player.x, player.y) = dungeon.player_spawn;
     let mut camera = create_camera(SCREEN_WIDTH, SCREEN_HEIGHT);
-    camera.target = player.camera_pos;
     loop {
         let (actual_screen_width, actual_screen_height) = screen_size();
         let scale_factor =
             (actual_screen_width / SCREEN_WIDTH).min(actual_screen_height / SCREEN_HEIGHT);
+        let (mouse_x, mouse_y) = mouse_position();
+
+        let (mouse_x, mouse_y) = (mouse_x / scale_factor, mouse_y / scale_factor);
+        let mouse_delta = mouse_delta_position();
+        let scroll = mouse_wheel();
+
+        if is_mouse_button_down(MouseButton::Middle) {
+            player.camera_pos.x += mouse_delta.x as f32 * SCREEN_WIDTH / 2. / player.camera_zoom;
+            player.camera_pos.y += mouse_delta.y as f32 * SCREEN_HEIGHT / 2. / player.camera_zoom;
+        }
+        if scroll.1 != 0.0 {
+            let amt = if scroll.1 > 0.0 {
+                1.0 / SCROLL_AMT
+            } else {
+                SCROLL_AMT
+            };
+            // store old mouse position (in world position)
+            let old_mouse_world_x =
+                mouse_x / player.camera_zoom + player.camera_pos.x - SCREEN_WIDTH / 2.0;
+            let old_mouse_world_y =
+                mouse_y / player.camera_zoom + player.camera_pos.y - SCREEN_HEIGHT / 2.0;
+
+            // update grid size
+            player.camera_zoom /= amt;
+            player.camera_zoom = player.camera_zoom.max(MIN_ZOOM);
+            // move camera position to zoom towards cursor
+            // by comparing old world mouse position
+            player.camera_pos.x =
+                old_mouse_world_x + SCREEN_WIDTH / 2.0 - mouse_x / player.camera_zoom;
+            player.camera_pos.y =
+                old_mouse_world_y + SCREEN_HEIGHT / 2.0 - mouse_y / player.camera_zoom
+        }
+
+        camera.target = player.camera_pos;
         set_camera(&camera);
         clear_background(BLACK);
 
@@ -152,6 +184,14 @@ async fn main() {
             .tileset
             .draw_tile((player.x * 8) as f32, (player.y * 8) as f32, 0.0, 0.0, None);
 
+        draw_rectangle(
+            mouse_x / player.camera_zoom + player.camera_pos.x - SCREEN_WIDTH / 2.0,
+            mouse_y / player.camera_zoom + player.camera_pos.y - SCREEN_HEIGHT / 2.0,
+            2.0,
+            2.0,
+            GREEN,
+        );
+
         set_default_camera();
         clear_background(BLACK);
         draw_texture_ex(
@@ -161,8 +201,8 @@ async fn main() {
             WHITE,
             DrawTextureParams {
                 dest_size: Some(Vec2::new(
-                    SCREEN_WIDTH * scale_factor,
-                    SCREEN_HEIGHT * scale_factor,
+                    SCREEN_WIDTH * scale_factor * player.camera_zoom,
+                    SCREEN_HEIGHT * scale_factor * player.camera_zoom,
                 )),
                 ..Default::default()
             },
