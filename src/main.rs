@@ -91,7 +91,7 @@ async fn main() {
                 );
             }
         }
-        assets.tileset.draw_sprite(0.0, 0.0, 0.0, 0.0, None);
+        assets.tileset.draw_tile(0.0, 0.0, 0.0, 0.0, None);
 
         set_default_camera();
         clear_background(BLACK);
