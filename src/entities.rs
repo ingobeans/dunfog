@@ -12,7 +12,7 @@ impl Default for Player {
         Self {
             x: 0,
             y: 0,
-            camera_pos: vec2(SCREEN_WIDTH / 2.0, SCREEN_HEIGHT / 2.0),
+            camera_pos: vec2(0.0, 0.0),
             camera_zoom: 1.0,
         }
     }

@@ -131,6 +131,7 @@ async fn main() {
     let mut player = entities::Player::default();
     (player.x, player.y) = dungeon.player_spawn;
     let mut camera = create_camera(SCREEN_WIDTH, SCREEN_HEIGHT);
+    camera.target = vec2(SCREEN_WIDTH / 2.0, SCREEN_HEIGHT / 2.0);
     loop {
         let (actual_screen_width, actual_screen_height) = screen_size();
         let scale_factor =
@@ -168,7 +169,6 @@ async fn main() {
                 old_mouse_world_y + SCREEN_HEIGHT / 2.0 - mouse_y / player.camera_zoom
         }
 
-        camera.target = player.camera_pos;
         set_camera(&camera);
         clear_background(BLACK);
 
@@ -185,19 +185,19 @@ async fn main() {
             .draw_tile((player.x * 8) as f32, (player.y * 8) as f32, 0.0, 0.0, None);
 
         draw_rectangle(
-            mouse_x / player.camera_zoom + player.camera_pos.x - SCREEN_WIDTH / 2.0,
-            mouse_y / player.camera_zoom + player.camera_pos.y - SCREEN_HEIGHT / 2.0,
+            (mouse_x) / player.camera_zoom + player.camera_pos.x,
+            (mouse_y) / player.camera_zoom + player.camera_pos.y,
             2.0,
             2.0,
-            GREEN,
+            RED,
         );
 
         set_default_camera();
         clear_background(BLACK);
         draw_texture_ex(
             &camera.render_target.as_ref().unwrap().texture,
-            0.0,
-            0.0,
+            -player.camera_pos.x * scale_factor * player.camera_zoom,
+            -player.camera_pos.y * scale_factor * player.camera_zoom,
             WHITE,
             DrawTextureParams {
                 dest_size: Some(Vec2::new(
