@@ -21,7 +21,7 @@ impl Tile {
         match self {
             Tile::Floor | Tile::Path => (0.0, 1.0),
             Tile::Path => (1.0, 1.0),
-            Tile::Wall => (0.0, 2.0),
+            Tile::Wall => (0.0, 0.0),
         }
     }
 }
@@ -134,6 +134,11 @@ async fn main() {
         let (mouse_x, mouse_y) = mouse_position();
 
         let (mouse_x, mouse_y) = (mouse_x / scale_factor, mouse_y / scale_factor);
+        let (mouse_tile_x, mouse_tile_y) = (
+            (((mouse_x) / player.camera_zoom + player.camera_pos.x) / 8.0).floor(),
+            (((mouse_y) / player.camera_zoom + player.camera_pos.y) / 8.0).floor(),
+        );
+
         let mouse_delta = mouse_delta_position();
         let scroll = mouse_wheel();
 
@@ -177,15 +182,20 @@ async fn main() {
         }
         assets
             .tileset
-            .draw_tile((player.x * 8) as f32, (player.y * 8) as f32, 0.0, 0.0, None);
+            .draw_tile((player.x * 8) as f32, (player.y * 8) as f32, 1.0, 0.0, None);
 
-        draw_rectangle(
-            (mouse_x) / player.camera_zoom + player.camera_pos.x,
-            (mouse_y) / player.camera_zoom + player.camera_pos.y,
-            2.0,
-            2.0,
-            RED,
-        );
+        if mouse_tile_x >= 0.0
+            && mouse_tile_y >= 0.0
+            && mouse_tile_x < TILES_HORIZONTAL as f32
+            && mouse_tile_y < TILES_VERTICAL as f32
+        {
+            let (tile_x, tile_y) = (mouse_tile_x as usize, mouse_tile_y as usize);
+            if dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable() {
+                assets
+                    .tileset
+                    .draw_tile(mouse_tile_x * 8.0, mouse_tile_y * 8.0, 2.0, 0.0, None);
+            }
+        }
 
         set_default_camera();
         clear_background(BLACK);
