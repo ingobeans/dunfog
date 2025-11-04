@@ -11,14 +11,14 @@ enum Tile {
 }
 
 struct Dungeon {
-    tiles: Vec<Vec<Tile>>,
+    tiles: Vec<Tile>,
 }
 impl Dungeon {
     fn generate_dungeon() -> Self {
-        let mut tiles =
-            vec![vec![Tile::Wall; SCREEN_WIDTH as usize / 8]; SCREEN_HEIGHT as usize / 8];
+        let mut tiles = vec![Tile::Wall; SCREEN_WIDTH as usize / 8 * SCREEN_HEIGHT as usize / 8];
 
-        let mut area_left = 5 * 5 * 5;
+        let rooms_area = 5 * 5 * 5;
+        let mut area_left = rooms_area;
         let mut rooms: Vec<(usize, usize, usize, usize)> = Vec::new();
         loop {
             let w = rand::gen_range(4, 6);
@@ -39,20 +39,67 @@ impl Dungeon {
 
             rooms.push((x, y, w, h));
         }
+        let mut positions = Vec::with_capacity(rooms_area - area_left);
+
         for (x, y, w, h) in rooms.into_iter() {
             for j in x..x + w {
                 for k in y..y + h {
-                    tiles[k][j] = Tile::Floor
+                    positions.push((j, k));
+                    tiles[j + k * SCREEN_WIDTH as usize / 8] = Tile::Floor
                 }
             }
         }
+
+        area_left = 15;
+        loop {
+            let (origin_x, origin_y) = positions[rand::gen_range(0, positions.len())];
+            let (target_x, target_y) = positions[rand::gen_range(0, positions.len())];
+            let delta_x = origin_x.abs_diff(target_x);
+            let delta_y = origin_y.abs_diff(target_y);
+            let mut moving_horizontal = delta_x < delta_y;
+            let (mut current_x, mut current_y) = (origin_x, origin_y);
+            loop {
+                if current_x == target_x && current_y == target_y {
+                    break;
+                }
+                if moving_horizontal {
+                    if current_x == target_x {
+                        moving_horizontal = false;
+                    } else if current_x < target_x {
+                        current_x += 1;
+                    } else {
+                        current_x -= 1;
+                    }
+                } else {
+                    if current_y == target_y {
+                        moving_horizontal = true;
+                    }
+                    if current_y < target_y {
+                        current_y += 1;
+                    } else {
+                        current_y -= 1;
+                    }
+                }
+                if positions.contains(&(current_x, current_y)) {
+                    break;
+                }
+                area_left = area_left.saturating_sub(1);
+                tiles[current_x + current_y * SCREEN_WIDTH as usize / 8] = Tile::Floor;
+            }
+            if area_left == 0 {
+                break;
+            }
+        }
+
         Self { tiles }
     }
 }
 
 #[macroquad::main("dunfog")]
 async fn main() {
-    rand::srand(miniquad::date::now() as _);
+    let seed = miniquad::date::now() as u64;
+    rand::srand(seed);
+    println!("dunfog v{} - seed: {seed}", env!("CARGO_PKG_VERSION"));
     let assets = assets::Assets::default();
     let dungeon = Dungeon::generate_dungeon();
     let camera = create_camera(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -61,23 +108,23 @@ async fn main() {
         let scale_factor =
             (actual_screen_width / SCREEN_WIDTH).min(actual_screen_height / SCREEN_HEIGHT);
         set_camera(&camera);
-        clear_background(WHITE);
+        clear_background(BLACK);
 
-        for (y, row) in dungeon.tiles.iter().enumerate() {
-            for (x, tile) in row.iter().enumerate() {
-                let (tile_x, tile_y) = if let Tile::Floor = *tile {
-                    (1.0, 2.0)
-                } else {
-                    (3.0, 1.0)
-                };
-                assets.tileset.draw_tile(
-                    x as f32 * 8.0 - SCREEN_WIDTH / 2.0,
-                    y as f32 * 8.0 - SCREEN_HEIGHT / 2.0,
-                    tile_x,
-                    tile_y,
-                    None,
-                );
-            }
+        for (i, tile) in dungeon.tiles.iter().enumerate() {
+            let y = i / (SCREEN_WIDTH as usize / 8);
+            let x = i % (SCREEN_WIDTH as usize / 8);
+            let (tile_x, tile_y) = if let Tile::Floor = *tile {
+                (0.0, 1.0)
+            } else {
+                (2.0, 1.0)
+            };
+            assets.tileset.draw_tile(
+                x as f32 * 8.0 - SCREEN_WIDTH / 2.0,
+                y as f32 * 8.0 - SCREEN_HEIGHT / 2.0,
+                tile_x,
+                tile_y,
+                None,
+            );
         }
         assets.tileset.draw_tile(0.0, 0.0, 0.0, 0.0, None);
 
