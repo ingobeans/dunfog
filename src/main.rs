@@ -8,67 +8,23 @@ mod utils;
 enum Tile {
     Floor,
     Wall,
+    Path,
 }
 
-fn is_all_rooms_connected(tiles: &[Tile]) -> bool {
-    // algorithm:
-    // 1. counts total floor tiles.
-    // 2. finds first floor tile.
-    // 3. recursively follows all floor tile neighbours
-    //    until end and counts how many total connected tiles there are
-
-    let total = tiles.iter().filter(|f| matches!(**f, Tile::Floor)).count();
-
-    fn count_connected(
-        x: usize,
-        y: usize,
-        tiles: &[Tile],
-        marked: &mut Vec<(usize, usize)>,
-    ) -> usize {
-        if !matches!(tiles[x + y * SCREEN_WIDTH as usize / 8], Tile::Floor) {
-            return 0;
-        }
-        if marked.contains(&(x, y)) {
-            return 0;
-        }
-        marked.push((x, y));
-        let mut count = 1;
-        if x > 0 {
-            count += count_connected(x - 1, y, tiles, marked);
-            if y > 0 {
-                count += count_connected(x - 1, y - 1, tiles, marked);
-            }
-            if y < SCREEN_HEIGHT as usize / 8 - 1 {
-                count += count_connected(x - 1, y + 1, tiles, marked);
-            }
-        }
-        if x < SCREEN_WIDTH as usize / 8 - 1 {
-            count += count_connected(x + 1, y, tiles, marked);
-            if y > 0 {
-                count += count_connected(x + 1, y - 1, tiles, marked);
-            }
-            if y < SCREEN_HEIGHT as usize / 8 - 1 {
-                count += count_connected(x + 1, y + 1, tiles, marked);
-            }
-        }
-        if y > 0 {
-            count += count_connected(x, y - 1, tiles, marked);
-        }
-        if y < SCREEN_HEIGHT as usize / 8 - 1 {
-            count += count_connected(x, y + 1, tiles, marked);
-        }
-        count
-    }
-    // find first floor tile
-    for (i, tile) in tiles.iter().enumerate() {
-        if matches!(*tile, Tile::Floor) {
-            let y = i / (SCREEN_WIDTH as usize / 8);
-            let x = i % (SCREEN_WIDTH as usize / 8);
-            return count_connected(x, y, tiles, &mut Vec::new()) == total;
+impl Tile {
+    fn is_walkable(self) -> bool {
+        match self {
+            Tile::Floor | Tile::Path => true,
+            _ => false,
         }
     }
-    println!("no floor tiles!");
-    false
+    fn get_tile(self) -> (f32, f32) {
+        match self {
+            Tile::Floor => (0.0, 1.0),
+            Tile::Path => (1.0, 1.0),
+            Tile::Wall => (0.0, 2.0),
+        }
+    }
 }
 
 struct Dungeon {
@@ -76,7 +32,7 @@ struct Dungeon {
 }
 impl Dungeon {
     fn generate_dungeon() -> Self {
-        let mut tiles = vec![Tile::Wall; SCREEN_WIDTH as usize / 8 * SCREEN_HEIGHT as usize / 8];
+        let mut tiles = vec![Tile::Wall; TILES_HORIZONTAL * TILES_VERTICAL];
 
         let rooms_area = 5 * 5 * 5;
         let mut area_left = rooms_area;
@@ -84,13 +40,13 @@ impl Dungeon {
         loop {
             let w = rand::gen_range(4, 6);
             let h = rand::gen_range(4, 6);
-            let mut x = rand::gen_range(0, SCREEN_WIDTH as usize / 8);
-            let mut y = rand::gen_range(0, SCREEN_HEIGHT as usize / 8);
-            if x + w >= SCREEN_WIDTH as usize / 8 {
-                x = SCREEN_WIDTH as usize / 8 - w - 1;
+            let mut x = rand::gen_range(0, TILES_HORIZONTAL);
+            let mut y = rand::gen_range(0, TILES_VERTICAL);
+            if x + w >= TILES_HORIZONTAL {
+                x = TILES_HORIZONTAL - w - 1;
             }
-            if y + h >= SCREEN_HEIGHT as usize / 8 {
-                y = SCREEN_HEIGHT as usize / 8 - h - 1;
+            if y + h >= TILES_VERTICAL {
+                y = TILES_VERTICAL - h - 1;
             }
             let area = w * h;
             if area > area_left {
@@ -106,7 +62,7 @@ impl Dungeon {
             for j in x..x + w {
                 for k in y..y + h {
                     positions.push((j, k));
-                    tiles[j + k * SCREEN_WIDTH as usize / 8] = Tile::Floor
+                    tiles[j + k * TILES_HORIZONTAL] = Tile::Floor
                 }
             }
         }
@@ -145,7 +101,7 @@ impl Dungeon {
                     break;
                 }
                 area_left = area_left.saturating_sub(1);
-                tiles[current_x + current_y * SCREEN_WIDTH as usize / 8] = Tile::Floor;
+                tiles[current_x + current_y * TILES_HORIZONTAL] = Tile::Path;
             }
             if is_all_rooms_connected(&tiles) {
                 break;
@@ -174,11 +130,7 @@ async fn main() {
         for (i, tile) in dungeon.tiles.iter().enumerate() {
             let y = i / (SCREEN_WIDTH as usize / 8);
             let x = i % (SCREEN_WIDTH as usize / 8);
-            let (tile_x, tile_y) = if let Tile::Floor = *tile {
-                (0.0, 1.0)
-            } else {
-                (2.0, 1.0)
-            };
+            let (tile_x, tile_y) = tile.get_tile();
             assets.tileset.draw_tile(
                 x as f32 * 8.0 - SCREEN_WIDTH / 2.0,
                 y as f32 * 8.0 - SCREEN_HEIGHT / 2.0,
@@ -214,7 +166,7 @@ mod tests {
 
     #[test]
     fn test_rooms_connected() {
-        let mut tiles = vec![Tile::Wall; SCREEN_WIDTH as usize / 8 * SCREEN_HEIGHT as usize / 8];
+        let mut tiles = vec![Tile::Wall; TILES_HORIZONTAL * TILES_VERTICAL];
         tiles[0] = Tile::Floor;
         tiles[1] = Tile::Floor;
         assert!(is_all_rooms_connected(&tiles))
