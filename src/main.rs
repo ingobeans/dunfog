@@ -2,6 +2,7 @@ use macroquad::{miniquad::window::screen_size, prelude::*, rand};
 use utils::*;
 
 mod assets;
+mod entities;
 mod utils;
 
 #[derive(Clone, Copy)]
@@ -19,8 +20,9 @@ impl Tile {
         }
     }
     fn get_tile(self) -> (f32, f32) {
+        #[expect(unreachable_patterns)]
         match self {
-            Tile::Floor => (0.0, 1.0),
+            Tile::Floor | Tile::Path => (0.0, 1.0),
             Tile::Path => (1.0, 1.0),
             Tile::Wall => (0.0, 2.0),
         }
@@ -29,6 +31,7 @@ impl Tile {
 
 struct Dungeon {
     tiles: Vec<Tile>,
+    player_spawn: (usize, usize),
 }
 impl Dungeon {
     fn generate_dungeon() -> Self {
@@ -37,6 +40,7 @@ impl Dungeon {
         let rooms_area = 5 * 5 * 5;
         let mut area_left = rooms_area;
         let mut rooms: Vec<(usize, usize, usize, usize)> = Vec::new();
+        let mut player_spawn = None;
         loop {
             let w = rand::gen_range(4, 6);
             let h = rand::gen_range(4, 6);
@@ -51,6 +55,9 @@ impl Dungeon {
             let area = w * h;
             if area > area_left {
                 break;
+            }
+            if player_spawn.is_none() {
+                player_spawn = Some((x, y))
             }
             area_left -= area;
 
@@ -108,7 +115,10 @@ impl Dungeon {
             }
         }
 
-        Self { tiles }
+        Self {
+            tiles,
+            player_spawn: player_spawn.unwrap(),
+        }
     }
 }
 
@@ -119,7 +129,10 @@ async fn main() {
     println!("dunfog v{} - seed: {seed}", env!("CARGO_PKG_VERSION"));
     let assets = assets::Assets::default();
     let dungeon = Dungeon::generate_dungeon();
-    let camera = create_camera(SCREEN_WIDTH, SCREEN_HEIGHT);
+    let mut player = entities::Player::default();
+    (player.x, player.y) = dungeon.player_spawn;
+    let mut camera = create_camera(SCREEN_WIDTH, SCREEN_HEIGHT);
+    camera.target = player.camera_pos;
     loop {
         let (actual_screen_width, actual_screen_height) = screen_size();
         let scale_factor =
@@ -131,15 +144,13 @@ async fn main() {
             let y = i / (SCREEN_WIDTH as usize / 8);
             let x = i % (SCREEN_WIDTH as usize / 8);
             let (tile_x, tile_y) = tile.get_tile();
-            assets.tileset.draw_tile(
-                x as f32 * 8.0 - SCREEN_WIDTH / 2.0,
-                y as f32 * 8.0 - SCREEN_HEIGHT / 2.0,
-                tile_x,
-                tile_y,
-                None,
-            );
+            assets
+                .tileset
+                .draw_tile(x as f32 * 8.0, y as f32 * 8.0, tile_x, tile_y, None);
         }
-        assets.tileset.draw_tile(0.0, 0.0, 0.0, 0.0, None);
+        assets
+            .tileset
+            .draw_tile((player.x * 8) as f32, (player.y * 8) as f32, 0.0, 0.0, None);
 
         set_default_camera();
         clear_background(BLACK);
