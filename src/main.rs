@@ -163,10 +163,14 @@ impl<'a> Dunfog<'a> {
         let scroll = mouse_wheel();
 
         if is_mouse_button_down(MouseButton::Middle) {
-            self.player.camera_pos.x +=
-                mouse_delta.x as f32 * SCREEN_WIDTH / 2. / self.player.camera_zoom;
-            self.player.camera_pos.y +=
-                mouse_delta.y as f32 * SCREEN_WIDTH / 2. / self.player.camera_zoom * 1.35;
+            self.player.camera_pos.x += mouse_delta.x as f32 * actual_screen_width
+                / scale_factor
+                / 2.
+                / self.player.camera_zoom;
+            self.player.camera_pos.y += mouse_delta.y as f32 * actual_screen_height
+                / scale_factor
+                / 2.
+                / self.player.camera_zoom;
         }
         if scroll.1 != 0.0 {
             let amt = if scroll.1 > 0.0 {
