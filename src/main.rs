@@ -118,7 +118,7 @@ impl Dungeon {
 
 #[macroquad::main("dunfog")]
 async fn main() {
-    let seed = miniquad::date::now() as u64;
+    let seed = miniquad::date::now().to_bits();
     rand::srand(seed);
     println!("dunfog v{} - seed: {seed}", env!("CARGO_PKG_VERSION"));
     let assets = assets::Assets::default();

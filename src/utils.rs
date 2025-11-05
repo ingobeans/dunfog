@@ -47,21 +47,9 @@ pub fn is_all_rooms_connected(tiles: &[Tile]) -> bool {
         let mut count = 1;
         if x > 0 {
             count += count_connected(x - 1, y, tiles, marked);
-            if y > 0 {
-                count += count_connected(x - 1, y - 1, tiles, marked);
-            }
-            if y < TILES_VERTICAL - 1 {
-                count += count_connected(x - 1, y + 1, tiles, marked);
-            }
         }
         if x < TILES_HORIZONTAL - 1 {
             count += count_connected(x + 1, y, tiles, marked);
-            if y > 0 {
-                count += count_connected(x + 1, y - 1, tiles, marked);
-            }
-            if y < TILES_VERTICAL - 1 {
-                count += count_connected(x + 1, y + 1, tiles, marked);
-            }
         }
         if y > 0 {
             count += count_connected(x, y - 1, tiles, marked);
