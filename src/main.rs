@@ -43,7 +43,7 @@ impl<'a> Dunfog<'a> {
     fn new(assets: &'a Assets) -> Self {
         let dungeon = Dungeon::generate_dungeon();
         let mut player = entities::Player::default();
-        player.move_to(dungeon.player_spawn);
+        player.move_to(dungeon.player_spawn, &dungeon);
         let mut camera = create_camera(SCREEN_WIDTH, SCREEN_HEIGHT);
         camera.target = vec2(SCREEN_WIDTH / 2.0, SCREEN_HEIGHT / 2.0);
         Self {
@@ -120,14 +120,42 @@ impl<'a> Dunfog<'a> {
             let y = i / (SCREEN_WIDTH as usize / 8);
             let x = i % (SCREEN_WIDTH as usize / 8);
             let (tile_x, tile_y) = tile.get_tile();
-            self.assets
-                .tileset
-                .draw_tile(x as f32 * 8.0, y as f32 * 8.0, tile_x, tile_y, None);
+            if !self.player.tile_status[x + y * TILES_HORIZONTAL].is_unknown() {
+                self.assets
+                    .tileset
+                    .draw_tile(x as f32 * 8.0, y as f32 * 8.0, tile_x, tile_y, None);
+            }
+        }
+        for (index, tile_status) in self.player.tile_status.iter().enumerate() {
+            let x = index % TILES_HORIZONTAL;
+            let y = index / TILES_HORIZONTAL;
+
+            if self.dungeon.tiles[index].is_walkable() {
+                match tile_status {
+                    entities::TileStatus::Unknown => draw_texture(
+                        &self.assets.darkness,
+                        x as f32 * 8.0 - 4.0,
+                        y as f32 * 8.0 - 4.0,
+                        WHITE,
+                    ),
+                    entities::TileStatus::Remembered => draw_texture(
+                        &self.assets.semi_darkness,
+                        x as f32 * 8.0 - 4.0,
+                        y as f32 * 8.0 - 4.0,
+                        WHITE,
+                    ),
+                    _ => {}
+                }
+            }
         }
         let time = get_time();
         self.player.draw(self.assets, time);
         for enemy in self.dungeon.enemies.iter() {
-            enemy.draw(self.assets, time);
+            if let entities::TileStatus::Known =
+                self.player.tile_status[enemy.x + enemy.y * TILES_HORIZONTAL]
+            {
+                enemy.draw(self.assets, time);
+            }
         }
 
         if mouse_tile_x >= 0.0

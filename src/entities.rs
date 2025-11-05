@@ -1,10 +1,22 @@
+use std::f32::consts::PI;
+
 use crate::{assets, dungeon::Dungeon, utils::*};
 use macroquad::prelude::*;
 
 pub enum PlayerAction {
     MoveDirection(Vec2),
 }
-
+#[derive(Clone, Copy)]
+pub enum TileStatus {
+    Unknown,
+    Known,
+    Remembered,
+}
+impl TileStatus {
+    pub fn is_unknown(self) -> bool {
+        matches!(self, TileStatus::Unknown)
+    }
+}
 pub struct Player {
     pub active_action: Option<PlayerAction>,
     pub x: usize,
@@ -12,6 +24,7 @@ pub struct Player {
     pub draw_pos: Vec2,
     pub camera_pos: Vec2,
     pub camera_zoom: f32,
+    pub tile_status: Vec<TileStatus>,
 }
 impl Default for Player {
     fn default() -> Self {
@@ -22,6 +35,7 @@ impl Default for Player {
             draw_pos: Vec2::ZERO,
             camera_pos: vec2(0.0, 0.0),
             camera_zoom: 1.0,
+            tile_status: vec![TileStatus::Unknown; TILES_HORIZONTAL * TILES_VERTICAL],
         }
     }
 }
@@ -31,9 +45,35 @@ impl Player {
             .tileset
             .draw_tile(self.draw_pos.x, self.draw_pos.y, 0.0, 2.0, None);
     }
-    pub fn move_to(&mut self, pos: (usize, usize)) {
+    /// Uses raycasts to see which tiles should be visible by player
+    pub fn get_visible_tiles(&mut self, dungeon: &Dungeon) {
+        let directions = 32;
+        let steps = 5;
+
+        for tile in self.tile_status.iter_mut() {
+            if let TileStatus::Known = *tile {
+                *tile = TileStatus::Remembered;
+            }
+        }
+        'outer: for i in 0..directions {
+            let angle = 2.0 * PI / directions as f32 * i as f32;
+            let direction = Vec2::from_angle(angle);
+            let start = vec2(self.x as f32, self.y as f32) + 0.5;
+            for step in 0..steps {
+                let current_pos = start + step as f32 * direction;
+                let (tile_x, tile_y) = (current_pos.x as usize, current_pos.y as usize);
+                if dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable() {
+                    self.tile_status[tile_x + tile_y * TILES_HORIZONTAL] = TileStatus::Known;
+                } else {
+                    continue 'outer;
+                }
+            }
+        }
+    }
+    pub fn move_to(&mut self, pos: (usize, usize), dungeon: &Dungeon) {
         (self.x, self.y) = pos;
         self.draw_pos = vec2((self.x * 8) as f32, (self.y * 8) as f32);
+        self.get_visible_tiles(dungeon);
     }
     /// Called each frame while an action is being performed,
     /// i.e. during the 'animation' of the action
@@ -68,6 +108,7 @@ impl Player {
             );
             if dungeon.tiles[new.0 + new.1 * TILES_HORIZONTAL].is_walkable() {
                 (self.x, self.y) = new;
+                self.get_visible_tiles(dungeon);
                 self.active_action = Some(PlayerAction::MoveDirection(input));
                 return true;
             }

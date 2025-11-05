@@ -4,6 +4,8 @@ use macroquad::prelude::*;
 
 pub struct Assets {
     pub tileset: Spritesheet,
+    pub darkness: Texture2D,
+    pub semi_darkness: Texture2D,
 }
 impl Default for Assets {
     fn default() -> Self {
@@ -12,6 +14,8 @@ impl Default for Assets {
                 load_ase_texture(include_bytes!("../assets/spritesheet.ase"), None),
                 8.0,
             ),
+            darkness: load_ase_texture(include_bytes!("../assets/darkness.ase"), None),
+            semi_darkness: load_ase_texture(include_bytes!("../assets/semi_darkness.ase"), None),
         }
     }
 }
