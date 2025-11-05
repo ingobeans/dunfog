@@ -1,9 +1,10 @@
 use macroquad::{miniquad::window::screen_size, prelude::*, rand};
 use utils::*;
 
-use crate::assets::Assets;
+use crate::{assets::Assets, dungeon::Dungeon};
 
 mod assets;
+mod dungeon;
 mod entities;
 mod utils;
 
@@ -24,107 +25,6 @@ impl Tile {
             Tile::Floor | Tile::Path => (0.0, 1.0),
             Tile::Path => (1.0, 1.0),
             Tile::Wall => (0.0, 0.0),
-        }
-    }
-}
-
-struct Dungeon {
-    tiles: Vec<Tile>,
-    player_spawn: (usize, usize),
-    enemies: Vec<entities::Enemy>,
-}
-impl Dungeon {
-    fn generate_dungeon() -> Self {
-        let mut enemies = Vec::new();
-        let mut tiles = vec![Tile::Wall; TILES_HORIZONTAL * TILES_VERTICAL];
-
-        let rooms_area = 5 * 5 * 5;
-        let mut area_left = rooms_area;
-        let mut rooms: Vec<(usize, usize, usize, usize)> = Vec::new();
-        let mut player_spawn = None;
-        loop {
-            let w = rand::gen_range(4, 6);
-            let h = rand::gen_range(4, 6);
-            let mut x = rand::gen_range(0, TILES_HORIZONTAL);
-            let mut y = rand::gen_range(0, TILES_VERTICAL);
-            if x + w >= TILES_HORIZONTAL {
-                x = TILES_HORIZONTAL - w - 1;
-            }
-            if y + h >= TILES_VERTICAL {
-                y = TILES_VERTICAL - h - 1;
-            }
-            let area = w * h;
-            if area > area_left {
-                break;
-            }
-            if player_spawn.is_none() {
-                player_spawn = Some((x, y))
-            } else {
-                enemies.push(entities::Enemy {
-                    x: x + rand::gen_range(1, w),
-                    y: y + rand::gen_range(0, h),
-                    ty: &entities::ZOMBIE,
-                    health: entities::ZOMBIE.max_health,
-                    awake: false,
-                });
-            }
-            area_left -= area;
-
-            rooms.push((x, y, w, h));
-        }
-        let mut positions = Vec::with_capacity(rooms_area - area_left);
-
-        for (x, y, w, h) in rooms.into_iter() {
-            for j in x..x + w {
-                for k in y..y + h {
-                    positions.push((j, k));
-                    tiles[j + k * TILES_HORIZONTAL] = Tile::Floor
-                }
-            }
-        }
-
-        area_left = 15;
-        loop {
-            let (origin_x, origin_y) = positions[rand::gen_range(0, positions.len())];
-            let (target_x, target_y) = positions[rand::gen_range(0, positions.len())];
-            let delta_x = origin_x.abs_diff(target_x);
-            let delta_y = origin_y.abs_diff(target_y);
-            let mut moving_horizontal = delta_x < delta_y;
-            let (mut current_x, mut current_y) = (origin_x, origin_y);
-            loop {
-                if current_x == target_x && current_y == target_y {
-                    break;
-                }
-                if moving_horizontal {
-                    if current_x == target_x {
-                        moving_horizontal = false;
-                    } else if current_x < target_x {
-                        current_x += 1;
-                    } else {
-                        current_x -= 1;
-                    }
-                } else if current_y == target_y {
-                    moving_horizontal = true;
-                } else if current_y < target_y {
-                    current_y += 1;
-                } else {
-                    current_y -= 1;
-                }
-                if positions.contains(&(current_x, current_y)) {
-                    break;
-                }
-                area_left = area_left.saturating_sub(1);
-                tiles[current_x + current_y * TILES_HORIZONTAL] = Tile::Path;
-            }
-            if is_all_rooms_connected(&tiles) {
-                break;
-            }
-        }
-
-        Self {
-            tiles,
-            player_spawn: player_spawn.unwrap(),
-            enemies,
         }
     }
 }
@@ -224,21 +124,10 @@ impl<'a> Dunfog<'a> {
                 .tileset
                 .draw_tile(x as f32 * 8.0, y as f32 * 8.0, tile_x, tile_y, None);
         }
-        self.assets.tileset.draw_tile(
-            self.player.draw_pos.x,
-            self.player.draw_pos.y,
-            0.0,
-            2.0,
-            None,
-        );
+        let time = get_time();
+        self.player.draw(self.assets, time);
         for enemy in self.dungeon.enemies.iter() {
-            self.assets.tileset.draw_tile(
-                (enemy.x * 8) as f32,
-                (enemy.y * 8) as f32,
-                enemy.ty.sprite_x,
-                enemy.ty.sprite_y,
-                None,
-            );
+            enemy.draw(self.assets, time);
         }
 
         if mouse_tile_x >= 0.0

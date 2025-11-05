@@ -1,4 +1,4 @@
-use crate::{Dungeon, utils::*};
+use crate::{assets, dungeon::Dungeon, utils::*};
 use macroquad::prelude::*;
 
 pub enum PlayerAction {
@@ -26,6 +26,11 @@ impl Default for Player {
     }
 }
 impl Player {
+    pub fn draw(&self, assets: &assets::Assets, _time_since_start: f64) {
+        assets
+            .tileset
+            .draw_tile(self.draw_pos.x, self.draw_pos.y, 0.0, 2.0, None);
+    }
     pub fn move_to(&mut self, pos: (usize, usize)) {
         (self.x, self.y) = pos;
         self.draw_pos = vec2((self.x * 8) as f32, (self.y * 8) as f32);
@@ -96,4 +101,35 @@ pub struct Enemy {
     pub awake: bool,
     pub health: f32,
 }
-impl Enemy {}
+impl Enemy {
+    pub fn new(x: usize, y: usize, ty: &'static EnemyType) -> Self {
+        Self {
+            x,
+            y,
+            ty,
+            awake: false,
+            health: ty.max_health,
+        }
+    }
+    pub fn draw(&self, assets: &assets::Assets, time_since_start: f64) {
+        assets.tileset.draw_tile(
+            (self.x * 8) as f32,
+            (self.y * 8) as f32,
+            self.ty.sprite_x,
+            self.ty.sprite_y,
+            None,
+        );
+        if !self.awake {
+            // modulate sleep bubble based on sin of time
+            let modulate = ((time_since_start * 2.0).sin() + 1.0) as f32 * 1.5;
+            // draw sleep icon
+            assets.tileset.draw_tile(
+                (self.x * 8) as f32 + 4.0,
+                (self.y * 8) as f32 - 7.0 + modulate,
+                1.0,
+                0.0,
+                None,
+            );
+        }
+    }
+}
