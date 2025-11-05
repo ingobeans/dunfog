@@ -44,6 +44,7 @@ impl<'a> Dunfog<'a> {
         let dungeon = Dungeon::generate_dungeon();
         let mut player = entities::Player::default();
         player.move_to(dungeon.player_spawn, &dungeon);
+        player.center_camera((SCREEN_WIDTH, SCREEN_HEIGHT));
         let mut camera = create_camera(SCREEN_WIDTH, SCREEN_HEIGHT);
         camera.target = vec2(SCREEN_WIDTH / 2.0, SCREEN_HEIGHT / 2.0);
         Self {
@@ -103,22 +104,44 @@ impl<'a> Dunfog<'a> {
             self.player.camera_pos.y =
                 old_mouse_world_y + SCREEN_HEIGHT / 2.0 - mouse_y / self.player.camera_zoom;
         }
+        let cursor_tile = if mouse_tile_x >= 0.0
+            && mouse_tile_y >= 0.0
+            && mouse_tile_x < TILES_HORIZONTAL as f32
+            && mouse_tile_y < TILES_VERTICAL as f32
+        {
+            Some((mouse_tile_x as usize, mouse_tile_y as usize))
+        } else {
+            None
+        };
+        let mut click = None;
+        if let Some(cursor_tile) = cursor_tile
+            && is_mouse_button_pressed(MouseButton::Left)
+        {
+            click = Some(cursor_tile)
+        }
+
         if self.action_animation_active <= 0.0 {
-            if self.player.update_idle(&mut self.dungeon, delta_time) {
+            if self
+                .player
+                .update_idle(&mut self.dungeon, delta_time, click)
+            {
                 self.action_animation_active = ACTION_TIME;
             }
         } else {
             self.action_animation_active -= delta_time;
-            self.player
-                .update_action(&mut self.dungeon, delta_time, ACTION_TIME);
+            self.player.update_action(
+                &mut self.dungeon,
+                delta_time,
+                ACTION_TIME - self.action_animation_active,
+            );
         }
 
         set_camera(&self.camera);
         clear_background(BLACK);
 
         for (i, tile) in self.dungeon.tiles.iter().enumerate() {
-            let y = i / (SCREEN_WIDTH as usize / 8);
-            let x = i % (SCREEN_WIDTH as usize / 8);
+            let y = i / TILES_HORIZONTAL;
+            let x = i % TILES_HORIZONTAL;
             let (tile_x, tile_y) = tile.get_tile();
             if !self.player.tile_status[x + y * TILES_HORIZONTAL].is_unknown() {
                 self.assets
@@ -148,8 +171,9 @@ impl<'a> Dunfog<'a> {
                 }
             }
         }
+
         let time = get_time();
-        self.player.draw(self.assets, time);
+        self.dungeon.enemies.retain(|f| f.health > 0.0);
         for enemy in self.dungeon.enemies.iter() {
             if let entities::TileStatus::Known =
                 self.player.tile_status[enemy.x + enemy.y * TILES_HORIZONTAL]
@@ -157,13 +181,9 @@ impl<'a> Dunfog<'a> {
                 enemy.draw(self.assets, time);
             }
         }
+        self.player.draw(self.assets, time);
 
-        if mouse_tile_x >= 0.0
-            && mouse_tile_y >= 0.0
-            && mouse_tile_x < TILES_HORIZONTAL as f32
-            && mouse_tile_y < TILES_VERTICAL as f32
-        {
-            let (tile_x, tile_y) = (mouse_tile_x as usize, mouse_tile_y as usize);
+        if let Some((tile_x, tile_y)) = cursor_tile {
             if self.dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable()
                 && !self.player.tile_status[tile_x + tile_y * TILES_HORIZONTAL].is_unknown()
             {
