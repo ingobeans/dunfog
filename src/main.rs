@@ -1,6 +1,8 @@
 use macroquad::{miniquad::window::screen_size, prelude::*, rand};
 use utils::*;
 
+use crate::assets::Assets;
+
 mod assets;
 mod entities;
 mod utils;
@@ -116,18 +118,27 @@ impl Dungeon {
     }
 }
 
-#[macroquad::main("dunfog")]
-async fn main() {
-    let seed = miniquad::date::now().to_bits();
-    rand::srand(seed);
-    println!("dunfog v{} - seed: {seed}", env!("CARGO_PKG_VERSION"));
-    let assets = assets::Assets::default();
-    let dungeon = Dungeon::generate_dungeon();
-    let mut player = entities::Player::default();
-    (player.x, player.y) = dungeon.player_spawn;
-    let mut camera = create_camera(SCREEN_WIDTH, SCREEN_HEIGHT);
-    camera.target = vec2(SCREEN_WIDTH / 2.0, SCREEN_HEIGHT / 2.0);
-    loop {
+struct Dunfog<'a> {
+    player: entities::Player,
+    dungeon: Dungeon,
+    assets: &'a Assets,
+    camera: Camera2D,
+}
+impl<'a> Dunfog<'a> {
+    fn new(assets: &'a Assets) -> Self {
+        let dungeon = Dungeon::generate_dungeon();
+        let mut player = entities::Player::default();
+        (player.x, player.y) = dungeon.player_spawn;
+        let mut camera = create_camera(SCREEN_WIDTH, SCREEN_HEIGHT);
+        camera.target = vec2(SCREEN_WIDTH / 2.0, SCREEN_HEIGHT / 2.0);
+        Self {
+            player,
+            dungeon,
+            assets,
+            camera,
+        }
+    }
+    fn update(&mut self) {
         let (actual_screen_width, actual_screen_height) = screen_size();
         let scale_factor =
             (actual_screen_width / SCREEN_WIDTH).min(actual_screen_height / SCREEN_HEIGHT);
@@ -135,16 +146,18 @@ async fn main() {
 
         let (mouse_x, mouse_y) = (mouse_x / scale_factor, mouse_y / scale_factor);
         let (mouse_tile_x, mouse_tile_y) = (
-            (((mouse_x) / player.camera_zoom + player.camera_pos.x) / 8.0).floor(),
-            (((mouse_y) / player.camera_zoom + player.camera_pos.y) / 8.0).floor(),
+            (((mouse_x) / self.player.camera_zoom + self.player.camera_pos.x) / 8.0).floor(),
+            (((mouse_y) / self.player.camera_zoom + self.player.camera_pos.y) / 8.0).floor(),
         );
 
         let mouse_delta = mouse_delta_position();
         let scroll = mouse_wheel();
 
         if is_mouse_button_down(MouseButton::Middle) {
-            player.camera_pos.x += mouse_delta.x as f32 * SCREEN_WIDTH / 2. / player.camera_zoom;
-            player.camera_pos.y += mouse_delta.y as f32 * SCREEN_HEIGHT / 2. / player.camera_zoom;
+            self.player.camera_pos.x +=
+                mouse_delta.x as f32 * SCREEN_WIDTH / 2. / self.player.camera_zoom;
+            self.player.camera_pos.y +=
+                mouse_delta.y as f32 * SCREEN_HEIGHT / 2. / self.player.camera_zoom;
         }
         if scroll.1 != 0.0 {
             let amt = if scroll.1 > 0.0 {
@@ -154,35 +167,39 @@ async fn main() {
             };
             // store old mouse position (in world position)
             let old_mouse_world_x =
-                mouse_x / player.camera_zoom + player.camera_pos.x - SCREEN_WIDTH / 2.0;
+                mouse_x / self.player.camera_zoom + self.player.camera_pos.x - SCREEN_WIDTH / 2.0;
             let old_mouse_world_y =
-                mouse_y / player.camera_zoom + player.camera_pos.y - SCREEN_HEIGHT / 2.0;
+                mouse_y / self.player.camera_zoom + self.player.camera_pos.y - SCREEN_HEIGHT / 2.0;
 
             // update grid size
-            player.camera_zoom /= amt;
-            player.camera_zoom = player.camera_zoom.max(MIN_ZOOM);
+            self.player.camera_zoom /= amt;
+            self.player.camera_zoom = self.player.camera_zoom.max(MIN_ZOOM);
             // move camera position to zoom towards cursor
             // by comparing old world mouse position
-            player.camera_pos.x =
-                old_mouse_world_x + SCREEN_WIDTH / 2.0 - mouse_x / player.camera_zoom;
-            player.camera_pos.y =
-                old_mouse_world_y + SCREEN_HEIGHT / 2.0 - mouse_y / player.camera_zoom
+            self.player.camera_pos.x =
+                old_mouse_world_x + SCREEN_WIDTH / 2.0 - mouse_x / self.player.camera_zoom;
+            self.player.camera_pos.y =
+                old_mouse_world_y + SCREEN_HEIGHT / 2.0 - mouse_y / self.player.camera_zoom
         }
 
-        set_camera(&camera);
+        set_camera(&self.camera);
         clear_background(BLACK);
 
-        for (i, tile) in dungeon.tiles.iter().enumerate() {
+        for (i, tile) in self.dungeon.tiles.iter().enumerate() {
             let y = i / (SCREEN_WIDTH as usize / 8);
             let x = i % (SCREEN_WIDTH as usize / 8);
             let (tile_x, tile_y) = tile.get_tile();
-            assets
+            self.assets
                 .tileset
                 .draw_tile(x as f32 * 8.0, y as f32 * 8.0, tile_x, tile_y, None);
         }
-        assets
-            .tileset
-            .draw_tile((player.x * 8) as f32, (player.y * 8) as f32, 1.0, 0.0, None);
+        self.assets.tileset.draw_tile(
+            (self.player.x * 8) as f32,
+            (self.player.y * 8) as f32,
+            1.0,
+            0.0,
+            None,
+        );
 
         if mouse_tile_x >= 0.0
             && mouse_tile_y >= 0.0
@@ -190,28 +207,44 @@ async fn main() {
             && mouse_tile_y < TILES_VERTICAL as f32
         {
             let (tile_x, tile_y) = (mouse_tile_x as usize, mouse_tile_y as usize);
-            if dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable() {
-                assets
-                    .tileset
-                    .draw_tile(mouse_tile_x * 8.0, mouse_tile_y * 8.0, 2.0, 0.0, None);
+            if self.dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable() {
+                self.assets.tileset.draw_tile(
+                    mouse_tile_x * 8.0,
+                    mouse_tile_y * 8.0,
+                    2.0,
+                    0.0,
+                    None,
+                );
             }
         }
 
         set_default_camera();
         clear_background(BLACK);
         draw_texture_ex(
-            &camera.render_target.as_ref().unwrap().texture,
-            -player.camera_pos.x * scale_factor * player.camera_zoom,
-            -player.camera_pos.y * scale_factor * player.camera_zoom,
+            &self.camera.render_target.as_ref().unwrap().texture,
+            -self.player.camera_pos.x * scale_factor * self.player.camera_zoom,
+            -self.player.camera_pos.y * scale_factor * self.player.camera_zoom,
             WHITE,
             DrawTextureParams {
                 dest_size: Some(Vec2::new(
-                    SCREEN_WIDTH * scale_factor * player.camera_zoom,
-                    SCREEN_HEIGHT * scale_factor * player.camera_zoom,
+                    SCREEN_WIDTH * scale_factor * self.player.camera_zoom,
+                    SCREEN_HEIGHT * scale_factor * self.player.camera_zoom,
                 )),
                 ..Default::default()
             },
         );
+    }
+}
+
+#[macroquad::main("dunfog")]
+async fn main() {
+    let seed = miniquad::date::now().to_bits();
+    rand::srand(seed);
+    println!("dunfog v{} - seed: {seed}", env!("CARGO_PKG_VERSION"));
+    let assets = assets::Assets::default();
+    let mut dunfog = Dunfog::new(&assets);
+    loop {
+        dunfog.update();
         next_frame().await
     }
 }
