@@ -31,6 +31,7 @@ impl Tile {
 struct Dungeon {
     tiles: Vec<Tile>,
     player_spawn: (usize, usize),
+    enemies: Vec<entities::Enemy>,
 }
 impl Dungeon {
     fn generate_dungeon() -> Self {
@@ -114,6 +115,7 @@ impl Dungeon {
         Self {
             tiles,
             player_spawn: player_spawn.unwrap(),
+            enemies: Vec::new(),
         }
     }
 }
@@ -123,12 +125,16 @@ struct Dunfog<'a> {
     dungeon: Dungeon,
     assets: &'a Assets,
     camera: Camera2D,
+    /// When <= 0.0, no action is currently being performed.
+    /// Game is idle, waiting for player to act. When > 0.0,
+    /// game is currently showing the animation of the current action
+    action_animation_active: f32,
 }
 impl<'a> Dunfog<'a> {
     fn new(assets: &'a Assets) -> Self {
         let dungeon = Dungeon::generate_dungeon();
         let mut player = entities::Player::default();
-        (player.x, player.y) = dungeon.player_spawn;
+        player.move_to(dungeon.player_spawn);
         let mut camera = create_camera(SCREEN_WIDTH, SCREEN_HEIGHT);
         camera.target = vec2(SCREEN_WIDTH / 2.0, SCREEN_HEIGHT / 2.0);
         Self {
@@ -136,6 +142,7 @@ impl<'a> Dunfog<'a> {
             dungeon,
             assets,
             camera,
+            action_animation_active: 0.0,
         }
     }
     fn update(&mut self) {
@@ -143,6 +150,8 @@ impl<'a> Dunfog<'a> {
         let scale_factor =
             (actual_screen_width / SCREEN_WIDTH).min(actual_screen_height / SCREEN_HEIGHT);
         let (mouse_x, mouse_y) = mouse_position();
+
+        let delta_time = get_frame_time();
 
         let (mouse_x, mouse_y) = (mouse_x / scale_factor, mouse_y / scale_factor);
         let (mouse_tile_x, mouse_tile_y) = (
@@ -181,6 +190,15 @@ impl<'a> Dunfog<'a> {
             self.player.camera_pos.y =
                 old_mouse_world_y + SCREEN_HEIGHT / 2.0 - mouse_y / self.player.camera_zoom
         }
+        if self.action_animation_active <= 0.0 {
+            if self.player.update_idle(&mut self.dungeon, delta_time) {
+                self.action_animation_active = ACTION_TIME;
+            }
+        } else {
+            self.action_animation_active -= delta_time;
+            self.player
+                .update_action(&mut self.dungeon, delta_time, ACTION_TIME);
+        }
 
         set_camera(&self.camera);
         clear_background(BLACK);
@@ -194,8 +212,8 @@ impl<'a> Dunfog<'a> {
                 .draw_tile(x as f32 * 8.0, y as f32 * 8.0, tile_x, tile_y, None);
         }
         self.assets.tileset.draw_tile(
-            (self.player.x * 8) as f32,
-            (self.player.y * 8) as f32,
+            self.player.draw_pos.x,
+            self.player.draw_pos.y,
             1.0,
             0.0,
             None,
