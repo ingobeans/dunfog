@@ -134,14 +134,14 @@ impl<'a> Dunfog<'a> {
                 match tile_status {
                     entities::TileStatus::Unknown => draw_texture(
                         &self.assets.darkness,
-                        x as f32 * 8.0 - 4.0,
-                        y as f32 * 8.0 - 4.0,
+                        x as f32 * 8.0 - 3.0,
+                        y as f32 * 8.0 - 3.0,
                         WHITE,
                     ),
                     entities::TileStatus::Remembered => draw_texture(
                         &self.assets.semi_darkness,
-                        x as f32 * 8.0 - 4.0,
-                        y as f32 * 8.0 - 4.0,
+                        x as f32 * 8.0 - 3.0,
+                        y as f32 * 8.0 - 3.0,
                         WHITE,
                     ),
                     _ => {}
