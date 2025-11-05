@@ -166,7 +166,7 @@ impl<'a> Dunfog<'a> {
             self.player.camera_pos.x +=
                 mouse_delta.x as f32 * SCREEN_WIDTH / 2. / self.player.camera_zoom;
             self.player.camera_pos.y +=
-                mouse_delta.y as f32 * SCREEN_HEIGHT / 2. / self.player.camera_zoom;
+                mouse_delta.y as f32 * SCREEN_WIDTH / 2. / self.player.camera_zoom * 1.35;
         }
         if scroll.1 != 0.0 {
             let amt = if scroll.1 > 0.0 {
@@ -188,7 +188,7 @@ impl<'a> Dunfog<'a> {
             self.player.camera_pos.x =
                 old_mouse_world_x + SCREEN_WIDTH / 2.0 - mouse_x / self.player.camera_zoom;
             self.player.camera_pos.y =
-                old_mouse_world_y + SCREEN_HEIGHT / 2.0 - mouse_y / self.player.camera_zoom
+                old_mouse_world_y + SCREEN_HEIGHT / 2.0 - mouse_y / self.player.camera_zoom;
         }
         if self.action_animation_active <= 0.0 {
             if self.player.update_idle(&mut self.dungeon, delta_time) {
