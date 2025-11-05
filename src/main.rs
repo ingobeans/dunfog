@@ -183,8 +183,8 @@ impl<'a> Dunfog<'a> {
         }
         self.player.draw(self.assets, time);
 
-        if let Some((tile_x, tile_y)) = cursor_tile {
-            if self.dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable()
+        if let Some((tile_x, tile_y)) = cursor_tile
+            && self.dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable()
                 && !self.player.tile_status[tile_x + tile_y * TILES_HORIZONTAL].is_unknown()
             {
                 self.assets.tileset.draw_tile(
@@ -195,7 +195,6 @@ impl<'a> Dunfog<'a> {
                     None,
                 );
             }
-        }
 
         set_default_camera();
         clear_background(BLACK);

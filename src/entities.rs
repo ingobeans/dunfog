@@ -124,29 +124,28 @@ impl Player {
         _delta_time: f32,
         click: Option<(usize, usize)>,
     ) -> bool {
-        if let Some((tile_x, tile_y)) = click {
-            if dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable()
-                && !self.tile_status[tile_x + tile_y * TILES_HORIZONTAL].is_unknown()
+        if let Some((tile_x, tile_y)) = click
+            && dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable()
+            && !self.tile_status[tile_x + tile_y * TILES_HORIZONTAL].is_unknown()
+        {
+            // todo: make player pathfind to that location
+
+            // if we click an enemy which is in range, attack it.
+
+            if let Some(enemy) = dungeon
+                .enemies
+                .iter_mut()
+                .find(|f| (f.x, f.y) == (tile_x, tile_y))
             {
-                // todo: make player pathfind to that location
-
-                // if we click an enemy which is in range, attack it.
-
-                if let Some(enemy) = dungeon
-                    .enemies
-                    .iter_mut()
-                    .find(|f| (f.x, f.y) == (tile_x, tile_y))
+                let delta = vec2(tile_x as f32 - self.x as f32, tile_y as f32 - self.y as f32);
+                if self
+                    .active_weapon
+                    .attack_range
+                    .contains(&((delta.length() - 1.0) as usize))
                 {
-                    let delta = vec2(tile_x as f32 - self.x as f32, tile_y as f32 - self.y as f32);
-                    if self
-                        .active_weapon
-                        .attack_range
-                        .contains(&((delta.length() - 1.0) as usize))
-                    {
-                        self.active_action = Some(PlayerAction::Attack(delta.normalize()));
-                        enemy.health -= self.active_weapon.base_damage;
-                        return true;
-                    }
+                    self.active_action = Some(PlayerAction::Attack(delta.normalize()));
+                    enemy.health -= self.active_weapon.base_damage;
+                    return true;
                 }
             }
         }
