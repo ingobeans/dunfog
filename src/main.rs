@@ -164,7 +164,9 @@ impl<'a> Dunfog<'a> {
             && mouse_tile_y < TILES_VERTICAL as f32
         {
             let (tile_x, tile_y) = (mouse_tile_x as usize, mouse_tile_y as usize);
-            if self.dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable() {
+            if self.dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable()
+                && !self.player.tile_status[tile_x + tile_y * TILES_HORIZONTAL].is_unknown()
+            {
                 self.assets.tileset.draw_tile(
                     mouse_tile_x * 8.0,
                     mouse_tile_y * 8.0,
