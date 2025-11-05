@@ -72,8 +72,28 @@ impl Player {
     }
 }
 
+pub struct EnemyType {
+    pub sprite_x: f32,
+    pub sprite_y: f32,
+    pub max_health: f32,
+}
+
+pub static ZOMBIE: EnemyType = EnemyType {
+    sprite_x: 0.0,
+    sprite_y: 3.0,
+    max_health: 10.0,
+};
+pub static SPIDER: EnemyType = EnemyType {
+    sprite_x: 0.0,
+    sprite_y: 4.0,
+    max_health: 6.0,
+};
+
 pub struct Enemy {
     pub x: usize,
     pub y: usize,
+    pub ty: &'static EnemyType,
+    pub awake: bool,
+    pub health: f32,
 }
 impl Enemy {}

@@ -35,6 +35,7 @@ struct Dungeon {
 }
 impl Dungeon {
     fn generate_dungeon() -> Self {
+        let mut enemies = Vec::new();
         let mut tiles = vec![Tile::Wall; TILES_HORIZONTAL * TILES_VERTICAL];
 
         let rooms_area = 5 * 5 * 5;
@@ -58,6 +59,14 @@ impl Dungeon {
             }
             if player_spawn.is_none() {
                 player_spawn = Some((x, y))
+            } else {
+                enemies.push(entities::Enemy {
+                    x: x + rand::gen_range(1, w),
+                    y: y + rand::gen_range(0, h),
+                    ty: &entities::ZOMBIE,
+                    health: entities::ZOMBIE.max_health,
+                    awake: false,
+                });
             }
             area_left -= area;
 
@@ -115,7 +124,7 @@ impl Dungeon {
         Self {
             tiles,
             player_spawn: player_spawn.unwrap(),
-            enemies: Vec::new(),
+            enemies,
         }
     }
 }
@@ -218,10 +227,19 @@ impl<'a> Dunfog<'a> {
         self.assets.tileset.draw_tile(
             self.player.draw_pos.x,
             self.player.draw_pos.y,
-            1.0,
             0.0,
+            2.0,
             None,
         );
+        for enemy in self.dungeon.enemies.iter() {
+            self.assets.tileset.draw_tile(
+                (enemy.x * 8) as f32,
+                (enemy.y * 8) as f32,
+                enemy.ty.sprite_x,
+                enemy.ty.sprite_y,
+                None,
+            );
+        }
 
         if mouse_tile_x >= 0.0
             && mouse_tile_y >= 0.0
