@@ -1,4 +1,8 @@
+use std::hash::Hash;
+use std::iter::Map;
+
 use macroquad::prelude::*;
+use pathfinding::num_traits::Zero;
 
 use crate::Tile;
 use crate::entities;
@@ -100,5 +104,35 @@ impl Dungeon {
             player_spawn: player_spawn.unwrap(),
             enemies,
         }
+    }
+
+    pub fn pathfind(
+        &self,
+        from: (usize, usize),
+        to: (usize, usize),
+    ) -> Option<(Vec<(usize, usize)>, usize)> {
+        pathfinding::prelude::astar(
+            &from,
+            |p| self.generate_successors(*p),
+            |&(x, y)| (to.0.abs_diff(x) + to.1.abs_diff(y)) / 3,
+            |&p| p == to,
+        )
+    }
+    fn generate_successors(
+        &self,
+        pos: (usize, usize),
+    ) -> Map<std::vec::IntoIter<(usize, usize)>, fn((usize, usize)) -> ((usize, usize), usize)>
+    {
+        let (x, y) = pos;
+        let mut candidates = vec![(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)];
+        candidates.retain(|(cx, cy)| self.tiles[cx + cy * TILES_HORIZONTAL].is_walkable());
+        fn map_function(p: (usize, usize)) -> ((usize, usize), usize) {
+            (p, 1)
+        }
+        let mapped: Map<
+            std::vec::IntoIter<(usize, usize)>,
+            fn((usize, usize)) -> ((usize, usize), usize),
+        > = candidates.into_iter().map(map_function);
+        mapped
     }
 }

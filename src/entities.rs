@@ -33,6 +33,7 @@ pub const BOW: Weapon = Weapon {
 };
 pub struct Player {
     pub active_action: Option<PlayerAction>,
+    pub moving_to: Vec<(usize, usize)>,
     pub x: usize,
     pub y: usize,
     pub draw_pos: Vec2,
@@ -45,6 +46,7 @@ impl Default for Player {
     fn default() -> Self {
         Self {
             active_action: None,
+            moving_to: Vec::new(),
             x: 0,
             y: 0,
             draw_pos: Vec2::ZERO,
@@ -124,32 +126,13 @@ impl Player {
         _delta_time: f32,
         click: Option<(usize, usize)>,
     ) -> bool {
-        if let Some((tile_x, tile_y)) = click
-            && dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable()
-            && !self.tile_status[tile_x + tile_y * TILES_HORIZONTAL].is_unknown()
-        {
-            // todo: make player pathfind to that location
-
-            // if we click an enemy which is in range, attack it.
-
-            if let Some(enemy) = dungeon
-                .enemies
-                .iter_mut()
-                .find(|f| (f.x, f.y) == (tile_x, tile_y))
-            {
-                let delta = vec2(tile_x as f32 - self.x as f32, tile_y as f32 - self.y as f32);
-                if self
-                    .active_weapon
-                    .attack_range
-                    .contains(&((delta.length() - 1.0) as usize))
-                {
-                    self.active_action = Some(PlayerAction::Attack(delta.normalize()));
-                    enemy.health -= self.active_weapon.base_damage;
-                    return true;
-                }
-            }
-        }
-        let input = get_input_axis();
+        let input = if let Some(step) = self.moving_to.pop() {
+            let x = step.0 as f32 - self.x as f32;
+            let y = step.1 as f32 - self.y as f32;
+            vec2(x, y)
+        } else {
+            get_input_axis()
+        };
         if input.length() == 1.0 {
             let new = (
                 self.x.saturating_add_signed(input.x as isize),
@@ -167,6 +150,35 @@ impl Player {
                 self.get_visible_tiles(dungeon);
                 self.active_action = Some(PlayerAction::MoveDirection(input));
                 return true;
+            }
+        }
+        if let Some((tile_x, tile_y)) = click
+            && dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable()
+            && !self.tile_status[tile_x + tile_y * TILES_HORIZONTAL].is_unknown()
+        {
+            // if we click an enemy which is in range, attack it.
+            if let Some(enemy) = dungeon
+                .enemies
+                .iter_mut()
+                .find(|f| (f.x, f.y) == (tile_x, tile_y))
+            {
+                let delta = vec2(tile_x as f32 - self.x as f32, tile_y as f32 - self.y as f32);
+                if self
+                    .active_weapon
+                    .attack_range
+                    .contains(&((delta.length() - 1.0) as usize))
+                {
+                    self.active_action = Some(PlayerAction::Attack(delta.normalize()));
+                    enemy.health -= self.active_weapon.base_damage;
+                    return true;
+                }
+            } else {
+                let goal = (tile_x, tile_y);
+                let result = dungeon.pathfind((self.x, self.y), goal);
+                if let Some((mut result, _)) = result {
+                    result.reverse();
+                    self.moving_to = result;
+                }
             }
         }
 
