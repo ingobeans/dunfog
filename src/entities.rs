@@ -65,8 +65,9 @@ impl Player {
     }
     /// Uses raycasts to see which tiles should be visible by player
     pub fn get_visible_tiles(&mut self, dungeon: &Dungeon) {
-        let directions = 32;
+        let directions = 20;
         let steps = 5;
+        let substeps = 5;
 
         for tile in self.tile_status.iter_mut() {
             if let TileStatus::Known = *tile {
@@ -78,12 +79,16 @@ impl Player {
             let direction = Vec2::from_angle(angle);
             let start = vec2(self.x as f32, self.y as f32) + 0.5;
             for step in 0..steps {
-                let current_pos = start + step as f32 * direction;
-                let (tile_x, tile_y) = (current_pos.x as usize, current_pos.y as usize);
-                if dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable() {
-                    self.tile_status[tile_x + tile_y * TILES_HORIZONTAL] = TileStatus::Known;
-                } else {
-                    continue 'outer;
+                for substep in 0..substeps {
+                    let substep = substep + 1;
+                    let current_pos =
+                        start + (step as f32 * direction * substep as f32 / substeps as f32);
+                    let (tile_x, tile_y) = (current_pos.x as usize, current_pos.y as usize);
+                    if dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable() {
+                        self.tile_status[tile_x + tile_y * TILES_HORIZONTAL] = TileStatus::Known;
+                    } else {
+                        continue 'outer;
+                    }
                 }
             }
         }
