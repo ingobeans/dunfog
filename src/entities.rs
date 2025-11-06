@@ -100,6 +100,18 @@ impl Player {
         self.get_visible_tiles(dungeon);
         self.reset_draw_pos();
     }
+    pub fn get_visible_enemies<'a>(&self, dungeon: &'a Dungeon) -> Vec<&'a Enemy> {
+        dungeon
+            .enemies
+            .iter()
+            .filter(|f| {
+                matches!(
+                    self.tile_status[f.x + f.y * TILES_HORIZONTAL],
+                    TileStatus::Known
+                )
+            })
+            .collect()
+    }
     pub fn update(
         &mut self,
         dungeon: &mut Dungeon,
@@ -223,6 +235,7 @@ pub struct Enemy {
     pub y: usize,
     pub ty: &'static EnemyType,
     pub awake: bool,
+    pub just_awoke: bool,
     pub health: f32,
 }
 impl Enemy {
@@ -232,7 +245,13 @@ impl Enemy {
             y,
             ty,
             awake: false,
+            just_awoke: false,
             health: ty.max_health,
+        }
+    }
+    pub fn act(&mut self) {
+        if self.just_awoke {
+            self.just_awoke = false;
         }
     }
     pub fn draw(&self, assets: &assets::Assets, time_since_start: f64) {
@@ -243,14 +262,15 @@ impl Enemy {
             self.ty.sprite_y,
             None,
         );
-        if !self.awake {
+        if !self.awake || self.just_awoke {
+            let tile_x = if !self.awake { 3.0 } else { 4.0 };
             // modulate sleep bubble based on sin of time
             let modulate = ((time_since_start * 2.0).sin() + 1.0) as f32 * 1.5;
             // draw sleep icon
             assets.tileset.draw_tile(
                 (self.x * 8) as f32 + 4.0,
                 (self.y * 8) as f32 - 7.0 + modulate,
-                1.0,
+                tile_x,
                 0.0,
                 None,
             );

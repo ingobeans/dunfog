@@ -36,32 +36,6 @@ enum GameState {
     Waiting(f32),
     EnemyAction(f32),
 }
-impl GameState {
-    fn update(&mut self, delta_time: f32) {
-        match self {
-            GameState::Idle => {}
-            GameState::PlayerAction(t) => {
-                *t -= delta_time;
-                if *t <= 0.0 {
-                    //*self = GameState::EnemyAction(ACTION_TIME);
-                    *self = GameState::Idle;
-                }
-            }
-            GameState::Waiting(t) => {
-                *t -= delta_time;
-                if *t <= 0.0 {
-                    *self = GameState::EnemyAction(ACTION_TIME);
-                }
-            }
-            GameState::EnemyAction(t) => {
-                *t -= delta_time;
-                if *t <= 0.0 {
-                    *self = GameState::Idle;
-                }
-            }
-        }
-    }
-}
 
 struct Dunfog<'a> {
     player: entities::Player,
@@ -84,6 +58,49 @@ impl<'a> Dunfog<'a> {
             assets,
             camera,
             state: GameState::Idle,
+        }
+    }
+    fn perform_enemy_actions(&mut self) {
+        for enemy in self.dungeon.enemies.iter_mut() {
+            if enemy.awake {
+                enemy.act();
+            } else if matches!(
+                self.player.tile_status[enemy.x + enemy.y * TILES_HORIZONTAL],
+                entities::TileStatus::Known
+            ) {
+                enemy.awake = true;
+                enemy.just_awoke = true;
+            }
+        }
+    }
+    fn update_gamestate(&mut self, delta_time: f32) {
+        match &mut self.state {
+            GameState::Idle => {}
+            GameState::PlayerAction(t) => {
+                *t -= delta_time;
+                if *t <= 0.0 {
+                    let enemies_visible =
+                        !self.player.get_visible_enemies(&self.dungeon).is_empty();
+                    self.perform_enemy_actions();
+                    if enemies_visible {
+                        self.state = GameState::EnemyAction(ACTION_TIME);
+                    } else {
+                        self.state = GameState::Idle;
+                    }
+                }
+            }
+            GameState::Waiting(t) => {
+                *t -= delta_time;
+                if *t <= 0.0 {
+                    self.state = GameState::EnemyAction(ACTION_TIME);
+                }
+            }
+            GameState::EnemyAction(t) => {
+                *t -= delta_time;
+                if *t <= 0.0 {
+                    self.state = GameState::Idle;
+                }
+            }
         }
     }
     fn update(&mut self) {
@@ -151,7 +168,7 @@ impl<'a> Dunfog<'a> {
             click = Some(cursor_tile)
         }
 
-        self.state.update(delta_time);
+        self.update_gamestate(delta_time);
         if self
             .player
             .update(&mut self.dungeon, delta_time, &self.state, click)
