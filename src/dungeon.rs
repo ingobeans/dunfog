@@ -11,6 +11,37 @@ pub struct Dungeon {
     pub enemies: Vec<entities::Enemy>,
 }
 impl Dungeon {
+    pub fn load_from_file(image: Image) -> Self {
+        assert_eq!(image.width, TILES_HORIZONTAL as u16);
+        assert_eq!(image.height, TILES_VERTICAL as u16);
+        let mut tiles = vec![Tile::Wall; TILES_HORIZONTAL * TILES_VERTICAL];
+        let mut player_spawn = (0, 0);
+        let mut enemies = Vec::new();
+        for (index, pixel) in image.get_image_data().iter().enumerate() {
+            let x = index % TILES_HORIZONTAL;
+            let y = index / TILES_HORIZONTAL;
+            match *pixel {
+                [255, 255, 255, _] => {
+                    tiles[index] = Tile::Floor;
+                }
+                [0, 0, 255, _] => {
+                    tiles[index] = Tile::Floor;
+                    player_spawn = (x, y);
+                }
+                [0, 255, 0, _] => {
+                    tiles[index] = Tile::Floor;
+                    enemies.push(entities::Enemy::new(x, y, &entities::ZOMBIE));
+                }
+
+                _ => {}
+            }
+        }
+        Self {
+            tiles,
+            player_spawn,
+            enemies,
+        }
+    }
     pub fn generate_dungeon() -> Self {
         let mut enemies = Vec::new();
         let mut tiles = vec![Tile::Wall; TILES_HORIZONTAL * TILES_VERTICAL];

@@ -45,8 +45,7 @@ struct Dunfog<'a> {
     state: GameState,
 }
 impl<'a> Dunfog<'a> {
-    fn new(assets: &'a Assets) -> Self {
-        let dungeon = Dungeon::generate_dungeon();
+    fn new(assets: &'a Assets, dungeon: Dungeon) -> Self {
         let mut player = entities::Player::default();
         player.move_to(dungeon.player_spawn, &dungeon);
         player.center_camera((SCREEN_WIDTH, SCREEN_HEIGHT));
@@ -272,11 +271,22 @@ impl<'a> Dunfog<'a> {
 
 #[macroquad::main("dunfog")]
 async fn main() {
+    let use_testing_dungeon = std::env::args().any(|f| f.as_str() == "test");
     let seed = miniquad::date::now().to_bits();
     rand::srand(seed);
     println!("dunfog v{} - seed: {seed}", env!("CARGO_PKG_VERSION"));
     let assets = assets::Assets::default();
-    let mut dunfog = Dunfog::new(&assets);
+
+    let dungeon = if use_testing_dungeon {
+        Dungeon::load_from_file(
+            Image::from_file_with_format(include_bytes!("../assets/testing_map.png"), None)
+                .unwrap(),
+        )
+    } else {
+        Dungeon::generate_dungeon()
+    };
+
+    let mut dunfog = Dunfog::new(&assets, dungeon);
     loop {
         dunfog.update();
         next_frame().await
