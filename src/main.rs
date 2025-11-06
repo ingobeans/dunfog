@@ -68,9 +68,7 @@ impl<'a> Dunfog<'a> {
             if enemy.awake {
                 let action = enemy.act(&self.dungeon, &mut self.player);
                 if let entities::EnemyAction::MoveTo(pos) = action {
-                    if (self.player.x, self.player.y) == pos
-                        || enemy_positions.iter().any(|f| pos == *f)
-                    {
+                    if (self.player.x, self.player.y) == pos || enemy_positions.contains(&pos) {
                         enemy.current_action = Some(entities::EnemyAction::Wait)
                     } else {
                         *enemy_positions

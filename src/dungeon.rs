@@ -146,11 +146,7 @@ impl Dungeon {
             |&p| p == to,
         )
     }
-    fn generate_successors(
-        &self,
-        pos: (usize, usize),
-    ) -> Map<std::vec::IntoIter<(usize, usize)>, fn((usize, usize)) -> ((usize, usize), usize)>
-    {
+    fn generate_successors(&self, pos: (usize, usize)) -> SuccessorIterator {
         let (x, y) = pos;
         let mut candidates = vec![(x + 1, y), (x, y + 1)];
         if x > 0 {
@@ -163,10 +159,9 @@ impl Dungeon {
         fn map_function(p: (usize, usize)) -> ((usize, usize), usize) {
             (p, 1)
         }
-        let mapped: Map<
-            std::vec::IntoIter<(usize, usize)>,
-            fn((usize, usize)) -> ((usize, usize), usize),
-        > = candidates.into_iter().map(map_function);
+        let mapped: SuccessorIterator = candidates.into_iter().map(map_function);
         mapped
     }
 }
+type SuccessorIterator =
+    Map<std::vec::IntoIter<(usize, usize)>, fn((usize, usize)) -> ((usize, usize), usize)>;
