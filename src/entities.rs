@@ -212,24 +212,36 @@ impl Player {
     }
 }
 
+pub enum MovementType {
+    ChaseWhenVisible,
+    AlwaysChase,
+}
+
 pub struct EnemyType {
     pub sprite_x: f32,
     pub sprite_y: f32,
     pub max_health: f32,
+    pub movement_type: MovementType,
 }
 
 pub static ZOMBIE: EnemyType = EnemyType {
     sprite_x: 0.0,
     sprite_y: 3.0,
     max_health: 10.0,
+    movement_type: MovementType::ChaseWhenVisible,
 };
 #[expect(dead_code)]
 pub static SPIDER: EnemyType = EnemyType {
     sprite_x: 0.0,
     sprite_y: 4.0,
     max_health: 6.0,
+    movement_type: MovementType::AlwaysChase,
 };
 
+pub enum EnemyAction {
+    MoveTo((usize, usize)),
+    Wait,
+}
 pub struct Enemy {
     pub x: usize,
     pub y: usize,
@@ -237,6 +249,7 @@ pub struct Enemy {
     pub awake: bool,
     pub just_awoke: bool,
     pub health: f32,
+    pub current_action: Option<EnemyAction>,
 }
 impl Enemy {
     pub fn new(x: usize, y: usize, ty: &'static EnemyType) -> Self {
@@ -247,12 +260,38 @@ impl Enemy {
             awake: false,
             just_awoke: false,
             health: ty.max_health,
+            current_action: None,
         }
     }
-    pub fn act(&mut self) {
+    pub fn awaken(&mut self) {
+        self.awake = true;
+        self.just_awoke = true;
+    }
+    pub fn act(&mut self, dungeon: &Dungeon, player: &mut Player) -> EnemyAction {
         if self.just_awoke {
             self.just_awoke = false;
         }
+        let should_pathfind = match &self.ty.movement_type {
+            MovementType::ChaseWhenVisible
+                if matches!(
+                    player.tile_status[self.x + self.y * TILES_HORIZONTAL],
+                    TileStatus::Known
+                ) =>
+            {
+                true
+            }
+            MovementType::AlwaysChase => true,
+            _ => false,
+        };
+        if should_pathfind {
+            let path = dungeon.pathfind((self.x, self.y), (player.x, player.y));
+            if let Some((path, _)) = path
+                && let Some(next) = path.get(1)
+            {
+                return EnemyAction::MoveTo(*next);
+            }
+        }
+        EnemyAction::Wait
     }
     pub fn draw(&self, assets: &assets::Assets, time_since_start: f64) {
         assets.tileset.draw_tile(

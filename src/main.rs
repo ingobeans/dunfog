@@ -61,17 +61,37 @@ impl<'a> Dunfog<'a> {
         }
     }
     fn perform_enemy_actions(&mut self) {
-        for enemy in self.dungeon.enemies.iter_mut() {
+        let mut buffer = Vec::new();
+        // me when i can just use mem::swap to get around a fundemental problem with my memory structure
+        std::mem::swap(&mut buffer, &mut self.dungeon.enemies);
+        let mut enemy_positions: Vec<(usize, usize)> = buffer.iter().map(|f| (f.x, f.y)).collect();
+        for enemy in buffer.iter_mut() {
             if enemy.awake {
-                enemy.act();
+                let action = enemy.act(&self.dungeon, &mut self.player);
+                if let entities::EnemyAction::MoveTo(pos) = action {
+                    if (self.player.x, self.player.y) == pos
+                        || enemy_positions.iter().any(|f| pos == *f)
+                    {
+                        enemy.current_action = Some(entities::EnemyAction::Wait)
+                    } else {
+                        *enemy_positions
+                            .iter_mut()
+                            .find(|f| **f == (enemy.x, enemy.y))
+                            .expect("enemy not found at its own location?") = pos;
+                        enemy.current_action = Some(action);
+                        (enemy.x, enemy.y) = pos;
+                    }
+                } else {
+                    enemy.current_action = Some(action)
+                }
             } else if matches!(
                 self.player.tile_status[enemy.x + enemy.y * TILES_HORIZONTAL],
                 entities::TileStatus::Known
             ) {
-                enemy.awake = true;
-                enemy.just_awoke = true;
+                enemy.awaken();
             }
         }
+        std::mem::swap(&mut buffer, &mut self.dungeon.enemies);
     }
     fn update_gamestate(&mut self, delta_time: f32) {
         match &mut self.state {
