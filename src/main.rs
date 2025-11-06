@@ -192,6 +192,9 @@ impl<'a> Dunfog<'a> {
         {
             self.state = GameState::PlayerAction(ACTION_TIME);
         }
+        for enemy in self.dungeon.enemies.iter_mut() {
+            enemy.update(delta_time, &self.state);
+        }
 
         set_camera(&self.camera);
         clear_background(BLACK);

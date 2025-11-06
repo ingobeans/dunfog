@@ -247,9 +247,11 @@ pub enum EnemyAction {
     MoveTo((usize, usize)),
     Wait,
 }
+
 pub struct Enemy {
     pub x: usize,
     pub y: usize,
+    pub draw_pos: Vec2,
     pub ty: &'static EnemyType,
     pub awake: bool,
     pub just_awoke: bool,
@@ -261,6 +263,7 @@ impl Enemy {
         Self {
             x,
             y,
+            draw_pos: vec2(x as f32 * 8.0, y as f32 * 8.0),
             ty,
             awake: false,
             just_awoke: false,
@@ -268,9 +271,33 @@ impl Enemy {
             current_action: None,
         }
     }
+    pub fn reset_draw_pos(&mut self) {
+        self.draw_pos = vec2((self.x * 8) as f32, (self.y * 8) as f32);
+    }
     pub fn awaken(&mut self) {
         self.awake = true;
         self.just_awoke = true;
+    }
+    pub fn update(&mut self, delta_time: f32, state: &GameState) {
+        if let GameState::EnemyAction(_time) = state
+            && let Some(current_action) = &self.current_action
+        {
+            match current_action {
+                EnemyAction::Wait => {}
+                EnemyAction::MoveTo(pos) => {
+                    let speed = delta_time * 8.0 / ACTION_TIME;
+                    let target = vec2(pos.0 as f32 * 8.0, pos.1 as f32 * 8.0);
+                    let delta = target - self.draw_pos;
+                    if self.draw_pos.distance(target) <= speed {
+                        self.draw_pos = target;
+                    } else {
+                        self.draw_pos += delta.normalize() * speed;
+                    }
+                }
+            }
+        } else {
+            self.reset_draw_pos();
+        }
     }
     pub fn act(&mut self, dungeon: &Dungeon, player: &mut Player) -> EnemyAction {
         if self.just_awoke {
@@ -300,8 +327,8 @@ impl Enemy {
     }
     pub fn draw(&self, assets: &assets::Assets, time_since_start: f64) {
         assets.tileset.draw_tile(
-            (self.x * 8) as f32,
-            (self.y * 8) as f32,
+            self.draw_pos.x,
+            self.draw_pos.y,
             self.ty.sprite_x,
             self.ty.sprite_y,
             None,
