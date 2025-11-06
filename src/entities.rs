@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use crate::{assets, dungeon::Dungeon, utils::*};
+use crate::{GameState, assets, dungeon::Dungeon, utils::*};
 use macroquad::prelude::*;
 
 pub enum PlayerAction {
@@ -88,70 +88,25 @@ impl Player {
             }
         }
     }
+    pub fn reset_draw_pos(&mut self) {
+        self.draw_pos = vec2((self.x * 8) as f32, (self.y * 8) as f32);
+    }
     pub fn center_camera(&mut self, screen_size: (f32, f32)) {
         self.camera_pos.x = self.draw_pos.x - screen_size.0 / 2.0;
         self.camera_pos.y = self.draw_pos.y - screen_size.1 / 2.0;
     }
     pub fn move_to(&mut self, pos: (usize, usize), dungeon: &Dungeon) {
         (self.x, self.y) = pos;
-        self.draw_pos = vec2((self.x * 8) as f32, (self.y * 8) as f32);
         self.get_visible_tiles(dungeon);
+        self.reset_draw_pos();
     }
-    /// Called each frame while an action is being performed,
-    /// i.e. during the 'animation' of the action
-    pub fn update_action(&mut self, _dungeon: &mut Dungeon, delta_time: f32, animation_time: f32) {
-        assert!(self.active_action.is_some());
-        match self.active_action.as_ref().unwrap() {
-            PlayerAction::MoveDirection(dir) => {
-                let speed = delta_time * 8.0 / ACTION_TIME;
-                let target = vec2((self.x * 8) as f32, (self.y * 8) as f32);
-                if self.draw_pos.distance(target) <= speed {
-                    self.draw_pos = target;
-                } else {
-                    self.draw_pos += *dir * speed;
-                }
-            }
-            PlayerAction::Attack(dir) => {
-                self.draw_pos = vec2((self.x * 8) as f32, (self.y * 8) as f32);
-                self.draw_pos += *dir * (animation_time / ACTION_TIME * PI).sin() * 3.0;
-            }
-        }
-    }
-    /// Called each frame when no action is being performed.
-    ///
-    /// Returns whether player performed an action, and subsequently game should let all enemies act.
-    pub fn update_idle(
+    pub fn update(
         &mut self,
         dungeon: &mut Dungeon,
-        _delta_time: f32,
+        delta_time: f32,
+        state: &GameState,
         click: Option<(usize, usize)>,
     ) -> bool {
-        let input = if let Some(step) = self.moving_to.pop() {
-            let x = step.0 as f32 - self.x as f32;
-            let y = step.1 as f32 - self.y as f32;
-            vec2(x, y)
-        } else {
-            get_input_axis()
-        };
-        if input.length() == 1.0 {
-            let new = (
-                self.x.saturating_add_signed(input.x as isize),
-                self.y.saturating_add_signed(input.y as isize),
-            );
-            if let Some(enemy) = dungeon.enemies.iter_mut().find(|f| (f.x, f.y) == new) {
-                // attack enemy
-                if self.active_weapon.attack_range.contains(&0) {
-                    self.active_action = Some(PlayerAction::Attack(input));
-                    enemy.health -= self.active_weapon.base_damage;
-                    return true;
-                }
-            } else if dungeon.tiles[new.0 + new.1 * TILES_HORIZONTAL].is_walkable() {
-                (self.x, self.y) = new;
-                self.get_visible_tiles(dungeon);
-                self.active_action = Some(PlayerAction::MoveDirection(input));
-                return true;
-            }
-        }
         if let Some((tile_x, tile_y)) = click
             && dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable()
             && !self.tile_status[tile_x + tile_y * TILES_HORIZONTAL].is_unknown()
@@ -179,6 +134,65 @@ impl Player {
                     result.reverse();
                     self.moving_to = result;
                 }
+            }
+        }
+        match state {
+            GameState::PlayerAction(time) => {
+                self.update_action(dungeon, delta_time, ACTION_TIME - *time);
+                false
+            }
+            GameState::Idle => self.update_idle(dungeon, delta_time),
+            _ => false,
+        }
+    }
+    /// Called each frame while an action is being performed,
+    /// i.e. during the 'animation' of the action
+    pub fn update_action(&mut self, _dungeon: &mut Dungeon, delta_time: f32, animation_time: f32) {
+        match self.active_action.as_ref().unwrap() {
+            PlayerAction::MoveDirection(dir) => {
+                let speed = delta_time * 8.0 / ACTION_TIME;
+                let target = vec2((self.x * 8) as f32, (self.y * 8) as f32);
+                if self.draw_pos.distance(target) <= speed {
+                    self.draw_pos = target;
+                } else {
+                    self.draw_pos += *dir * speed;
+                }
+            }
+            PlayerAction::Attack(dir) => {
+                self.draw_pos = vec2((self.x * 8) as f32, (self.y * 8) as f32);
+                self.draw_pos += *dir * (animation_time / ACTION_TIME * PI).sin() * 3.0;
+            }
+        }
+    }
+    /// Called each frame when no action is being performed.
+    ///
+    /// Returns whether player performed an action, and subsequently game should let all enemies act.
+    pub fn update_idle(&mut self, dungeon: &mut Dungeon, _delta_time: f32) -> bool {
+        self.reset_draw_pos();
+        let input = if let Some(step) = self.moving_to.pop() {
+            let x = step.0 as f32 - self.x as f32;
+            let y = step.1 as f32 - self.y as f32;
+            vec2(x, y)
+        } else {
+            get_input_axis()
+        };
+        if input.length() == 1.0 {
+            let new = (
+                self.x.saturating_add_signed(input.x as isize),
+                self.y.saturating_add_signed(input.y as isize),
+            );
+            if let Some(enemy) = dungeon.enemies.iter_mut().find(|f| (f.x, f.y) == new) {
+                // attack enemy
+                if self.active_weapon.attack_range.contains(&0) {
+                    self.active_action = Some(PlayerAction::Attack(input));
+                    enemy.health -= self.active_weapon.base_damage;
+                    return true;
+                }
+            } else if dungeon.tiles[new.0 + new.1 * TILES_HORIZONTAL].is_walkable() {
+                (self.x, self.y) = new;
+                self.get_visible_tiles(dungeon);
+                self.active_action = Some(PlayerAction::MoveDirection(input));
+                return true;
             }
         }
 

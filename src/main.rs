@@ -29,15 +29,46 @@ impl Tile {
     }
 }
 
+#[expect(dead_code)]
+enum GameState {
+    Idle,
+    PlayerAction(f32),
+    Waiting(f32),
+    EnemyAction(f32),
+}
+impl GameState {
+    fn update(&mut self, delta_time: f32) {
+        match self {
+            GameState::Idle => {}
+            GameState::PlayerAction(t) => {
+                *t -= delta_time;
+                if *t <= 0.0 {
+                    //*self = GameState::EnemyAction(ACTION_TIME);
+                    *self = GameState::Idle;
+                }
+            }
+            GameState::Waiting(t) => {
+                *t -= delta_time;
+                if *t <= 0.0 {
+                    *self = GameState::EnemyAction(ACTION_TIME);
+                }
+            }
+            GameState::EnemyAction(t) => {
+                *t -= delta_time;
+                if *t <= 0.0 {
+                    *self = GameState::Idle;
+                }
+            }
+        }
+    }
+}
+
 struct Dunfog<'a> {
     player: entities::Player,
     dungeon: Dungeon,
     assets: &'a Assets,
     camera: Camera2D,
-    /// When <= 0.0, no action is currently being performed.
-    /// Game is idle, waiting for player to act. When > 0.0,
-    /// game is currently showing the animation of the current action
-    action_animation_active: f32,
+    state: GameState,
 }
 impl<'a> Dunfog<'a> {
     fn new(assets: &'a Assets) -> Self {
@@ -52,7 +83,7 @@ impl<'a> Dunfog<'a> {
             dungeon,
             assets,
             camera,
-            action_animation_active: 0.0,
+            state: GameState::Idle,
         }
     }
     fn update(&mut self) {
@@ -120,20 +151,12 @@ impl<'a> Dunfog<'a> {
             click = Some(cursor_tile)
         }
 
-        if self.action_animation_active <= 0.0 {
-            if self
-                .player
-                .update_idle(&mut self.dungeon, delta_time, click)
-            {
-                self.action_animation_active = ACTION_TIME;
-            }
-        } else {
-            self.action_animation_active -= delta_time;
-            self.player.update_action(
-                &mut self.dungeon,
-                delta_time,
-                ACTION_TIME - self.action_animation_active,
-            );
+        self.state.update(delta_time);
+        if self
+            .player
+            .update(&mut self.dungeon, delta_time, &self.state, click)
+        {
+            self.state = GameState::PlayerAction(ACTION_TIME);
         }
 
         set_camera(&self.camera);
@@ -185,16 +208,12 @@ impl<'a> Dunfog<'a> {
 
         if let Some((tile_x, tile_y)) = cursor_tile
             && self.dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable()
-                && !self.player.tile_status[tile_x + tile_y * TILES_HORIZONTAL].is_unknown()
-            {
-                self.assets.tileset.draw_tile(
-                    mouse_tile_x * 8.0,
-                    mouse_tile_y * 8.0,
-                    2.0,
-                    0.0,
-                    None,
-                );
-            }
+            && !self.player.tile_status[tile_x + tile_y * TILES_HORIZONTAL].is_unknown()
+        {
+            self.assets
+                .tileset
+                .draw_tile(mouse_tile_x * 8.0, mouse_tile_y * 8.0, 2.0, 0.0, None);
+        }
 
         set_default_camera();
         clear_background(BLACK);
