@@ -22,19 +22,47 @@ impl TileStatus {
 pub struct Weapon {
     pub attack_range: std::ops::Range<usize>,
     pub base_damage: f32,
+    pub sprite_x: f32,
+    pub sprite_y: f32,
 }
 pub const MELEE: Weapon = Weapon {
     attack_range: 0..1,
     base_damage: 1.0,
+    sprite_x: 0.0,
+    sprite_y: 0.0,
 };
 pub const DAGGER: Weapon = Weapon {
     attack_range: 0..1,
     base_damage: 2.0,
+    sprite_x: 0.0,
+    sprite_y: 0.0,
 };
 pub const BOW: Weapon = Weapon {
     attack_range: 1..3,
     base_damage: 2.0,
+    sprite_x: 1.0,
+    sprite_y: 0.0,
 };
+#[derive(Clone, Copy)]
+pub enum Item {
+    Weapon(&'static Weapon),
+}
+impl Item {
+    pub fn get_sprite(&self) -> Vec2 {
+        match &self {
+            Item::Weapon(weapon) => vec2(weapon.sprite_x, weapon.sprite_y),
+        }
+    }
+    // fn unwrap_weapon(&self) -> &'static Weapon {
+    //     match &self {
+    //         Item::Weapon(weapon) => &weapon,
+    //         _ => {
+    //             panic!()
+    //         }
+    //     }
+    // }
+}
+
 pub struct Player {
     pub active_action: Option<PlayerAction>,
     pub moving_to: Vec<(usize, usize)>,
@@ -44,10 +72,13 @@ pub struct Player {
     pub camera_pos: Vec2,
     pub camera_zoom: f32,
     pub tile_status: Vec<TileStatus>,
-    pub active_weapon: Weapon,
+    pub inventory: Vec<Option<Item>>,
+    pub cursor_item: Option<Item>,
 }
 impl Default for Player {
     fn default() -> Self {
+        let mut inventory = vec![None; 6];
+        inventory[0] = Some(Item::Weapon(&DAGGER));
         Self {
             active_action: None,
             moving_to: Vec::new(),
@@ -57,7 +88,8 @@ impl Default for Player {
             camera_pos: vec2(0.0, 0.0),
             camera_zoom: 1.0,
             tile_status: vec![TileStatus::Unknown; TILES_HORIZONTAL * TILES_VERTICAL],
-            active_weapon: DAGGER,
+            inventory,
+            cursor_item: None,
         }
     }
 }
@@ -139,13 +171,13 @@ impl Player {
                 .find(|f| (f.x, f.y) == (tile_x, tile_y))
             {
                 let delta = vec2(tile_x as f32 - self.x as f32, tile_y as f32 - self.y as f32);
-                if self
-                    .active_weapon
-                    .attack_range
-                    .contains(&((delta.length() - 1.0) as usize))
+                if let Item::Weapon(weapon) = &self.inventory[0].unwrap_or(Item::Weapon(&MELEE))
+                    && weapon
+                        .attack_range
+                        .contains(&((delta.length() - 1.0) as usize))
                 {
                     self.active_action = Some(PlayerAction::Attack(delta.normalize()));
-                    enemy.health -= self.active_weapon.base_damage;
+                    enemy.health -= weapon.base_damage;
                     return true;
                 }
             } else {
@@ -205,9 +237,11 @@ impl Player {
             );
             if let Some(enemy) = dungeon.enemies.iter_mut().find(|f| (f.x, f.y) == new) {
                 // attack enemy
-                if self.active_weapon.attack_range.contains(&0) {
+                if let Item::Weapon(weapon) = &self.inventory[0].unwrap_or(Item::Weapon(&MELEE))
+                    && weapon.attack_range.contains(&0)
+                {
                     self.active_action = Some(PlayerAction::Attack(input));
-                    enemy.health -= self.active_weapon.base_damage;
+                    enemy.health -= weapon.base_damage;
                     return true;
                 }
             } else if dungeon.tiles[new.0 + new.1 * TILES_HORIZONTAL].is_walkable() {

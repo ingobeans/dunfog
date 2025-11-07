@@ -6,6 +6,7 @@ use crate::{assets::Assets, dungeon::Dungeon};
 mod assets;
 mod dungeon;
 mod entities;
+mod ui;
 mod utils;
 
 #[derive(Clone, Copy)]
@@ -41,22 +42,28 @@ struct Dunfog<'a> {
     player: entities::Player,
     dungeon: Dungeon,
     assets: &'a Assets,
-    camera: Camera2D,
+    world_camera: Camera2D,
+    ui_camera: Camera2D,
     state: GameState,
+    inv_open: bool,
 }
 impl<'a> Dunfog<'a> {
     fn new(assets: &'a Assets, dungeon: Dungeon) -> Self {
         let mut player = entities::Player::default();
         player.move_to(dungeon.player_spawn, &dungeon);
         player.center_camera((SCREEN_WIDTH, SCREEN_HEIGHT));
-        let mut camera = create_camera(SCREEN_WIDTH, SCREEN_HEIGHT);
-        camera.target = vec2(SCREEN_WIDTH / 2.0, SCREEN_HEIGHT / 2.0);
+        let mut world_camera = create_camera(SCREEN_WIDTH, SCREEN_HEIGHT);
+        world_camera.target = vec2(SCREEN_WIDTH / 2.0, SCREEN_HEIGHT / 2.0);
+        let mut ui_camera = create_camera(SCREEN_WIDTH, SCREEN_HEIGHT);
+        ui_camera.target = vec2(SCREEN_WIDTH / 2.0, SCREEN_HEIGHT / 2.0);
         Self {
             player,
             dungeon,
             assets,
-            camera,
+            world_camera,
+            ui_camera,
             state: GameState::Idle,
+            inv_open: false,
         }
     }
     fn perform_enemy_actions(&mut self) {
@@ -128,6 +135,10 @@ impl<'a> Dunfog<'a> {
 
         let delta_time = get_frame_time();
 
+        if is_key_pressed(KeyCode::E) || is_key_pressed(KeyCode::Escape) {
+            self.inv_open = !self.inv_open
+        }
+
         let (mouse_x, mouse_y) = (mouse_x / scale_factor, mouse_y / scale_factor);
         let (mouse_tile_x, mouse_tile_y) = (
             (((mouse_x) / self.player.camera_zoom + self.player.camera_pos.x) / 8.0).floor(),
@@ -185,18 +196,20 @@ impl<'a> Dunfog<'a> {
             click = Some(cursor_tile)
         }
 
-        self.update_gamestate(delta_time);
-        if self
-            .player
-            .update(&mut self.dungeon, delta_time, &self.state, click)
-        {
-            self.state = GameState::PlayerAction(ACTION_TIME);
-        }
-        for enemy in self.dungeon.enemies.iter_mut() {
-            enemy.update(delta_time, &self.state);
+        if !self.inv_open {
+            self.update_gamestate(delta_time);
+            if self
+                .player
+                .update(&mut self.dungeon, delta_time, &self.state, click)
+            {
+                self.state = GameState::PlayerAction(ACTION_TIME);
+            }
+            for enemy in self.dungeon.enemies.iter_mut() {
+                enemy.update(delta_time, &self.state);
+            }
         }
 
-        set_camera(&self.camera);
+        set_camera(&self.world_camera);
         clear_background(BLACK);
 
         for (i, tile) in self.dungeon.tiles.iter().enumerate() {
@@ -243,7 +256,8 @@ impl<'a> Dunfog<'a> {
         }
         self.player.draw(self.assets, time);
 
-        if let Some((tile_x, tile_y)) = cursor_tile
+        if !self.inv_open
+            && let Some((tile_x, tile_y)) = cursor_tile
             && self.dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable()
             && !self.player.tile_status[tile_x + tile_y * TILES_HORIZONTAL].is_unknown()
         {
@@ -252,10 +266,21 @@ impl<'a> Dunfog<'a> {
                 .draw_tile(mouse_tile_x * 8.0, mouse_tile_y * 8.0, 2.0, 0.0, None);
         }
 
+        set_camera(&self.ui_camera);
+        clear_background(BLACK.with_alpha(0.0));
+        if self.inv_open {
+            ui::draw_inventory(
+                &mut self.player,
+                self.assets,
+                mouse_x - actual_screen_width / scale_factor + SCREEN_WIDTH,
+                mouse_y,
+            );
+        }
+
         set_default_camera();
         clear_background(BLACK);
         draw_texture_ex(
-            &self.camera.render_target.as_ref().unwrap().texture,
+            &self.world_camera.render_target.as_ref().unwrap().texture,
             -self.player.camera_pos.x * scale_factor * self.player.camera_zoom,
             -self.player.camera_pos.y * scale_factor * self.player.camera_zoom,
             WHITE,
@@ -263,6 +288,19 @@ impl<'a> Dunfog<'a> {
                 dest_size: Some(Vec2::new(
                     SCREEN_WIDTH * scale_factor * self.player.camera_zoom,
                     SCREEN_HEIGHT * scale_factor * self.player.camera_zoom,
+                )),
+                ..Default::default()
+            },
+        );
+        draw_texture_ex(
+            &self.ui_camera.render_target.as_ref().unwrap().texture,
+            actual_screen_width - SCREEN_WIDTH * scale_factor,
+            0.0,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(Vec2::new(
+                    SCREEN_WIDTH * scale_factor,
+                    SCREEN_HEIGHT * scale_factor,
                 )),
                 ..Default::default()
             },
