@@ -6,6 +6,7 @@ use macroquad::prelude::*;
 pub enum PlayerAction {
     MoveDirection(Vec2),
     Attack(Vec2),
+    Wait,
 }
 #[derive(Clone, Copy)]
 pub enum TileStatus {
@@ -22,6 +23,10 @@ pub struct Weapon {
     pub attack_range: std::ops::Range<usize>,
     pub base_damage: f32,
 }
+pub const MELEE: Weapon = Weapon {
+    attack_range: 0..1,
+    base_damage: 1.0,
+};
 pub const DAGGER: Weapon = Weapon {
     attack_range: 0..1,
     base_damage: 2.0,
@@ -179,6 +184,7 @@ impl Player {
                 self.draw_pos = vec2((self.x * 8) as f32, (self.y * 8) as f32);
                 self.draw_pos += *dir * (animation_time / ACTION_TIME * PI).sin() * 3.0;
             }
+            PlayerAction::Wait => {}
         }
     }
     /// Called each frame when no action is being performed.
@@ -212,6 +218,10 @@ impl Player {
                 return true;
             }
         }
+        if is_key_pressed(KeyCode::H) {
+            self.active_action = Some(PlayerAction::Wait);
+            return true;
+        }
 
         false
     }
@@ -227,6 +237,7 @@ pub struct EnemyType {
     pub sprite_y: f32,
     pub max_health: f32,
     pub movement_type: MovementType,
+    pub weapon: &'static Weapon,
 }
 
 pub static ZOMBIE: EnemyType = EnemyType {
@@ -234,13 +245,21 @@ pub static ZOMBIE: EnemyType = EnemyType {
     sprite_y: 3.0,
     max_health: 10.0,
     movement_type: MovementType::ChaseWhenVisible,
+    weapon: &MELEE,
 };
-#[expect(dead_code)]
+pub static SKELETON: EnemyType = EnemyType {
+    sprite_x: 0.0,
+    sprite_y: 5.0,
+    max_health: 10.0,
+    movement_type: MovementType::AlwaysChase,
+    weapon: &BOW,
+};
 pub static SPIDER: EnemyType = EnemyType {
     sprite_x: 0.0,
     sprite_y: 4.0,
     max_health: 6.0,
     movement_type: MovementType::AlwaysChase,
+    weapon: &MELEE,
 };
 
 pub enum EnemyAction {
@@ -251,24 +270,29 @@ pub enum EnemyAction {
 pub struct Enemy {
     pub x: usize,
     pub y: usize,
+    /// everyone has a favorite angle
+    pub favorite_angle: f32,
     pub draw_pos: Vec2,
     pub ty: &'static EnemyType,
     pub awake: bool,
     pub just_awoke: bool,
     pub health: f32,
     pub current_action: Option<EnemyAction>,
+    last_pathfind_target: Option<Vec2>,
 }
 impl Enemy {
     pub fn new(x: usize, y: usize, ty: &'static EnemyType) -> Self {
         Self {
             x,
             y,
+            favorite_angle: rand::gen_range(0.0, 2.0 * PI),
             draw_pos: vec2(x as f32 * 8.0, y as f32 * 8.0),
             ty,
             awake: false,
             just_awoke: false,
             health: ty.max_health,
             current_action: None,
+            last_pathfind_target: None,
         }
     }
     pub fn reset_draw_pos(&mut self) {
@@ -316,11 +340,48 @@ impl Enemy {
             _ => false,
         };
         if should_pathfind {
-            let path = dungeon.pathfind((self.x, self.y), (player.x, player.y));
-            if let Some((path, _)) = path
-                && let Some(next) = path.get(1)
-            {
-                return EnemyAction::MoveTo(*next);
+            // decide whether to move away from or towards player.
+            // usually it moves towards player, but if weapon min range is larger that the dist to player, move away
+            let delta = vec2(
+                player.x as f32 - self.x as f32,
+                player.y as f32 - self.y as f32,
+            );
+            let dist = delta.length();
+
+            let min_range = self.ty.weapon.attack_range.clone().min().unwrap_or(0) + 1;
+            let max_range = self.ty.weapon.attack_range.clone().max().unwrap_or(0) + 1;
+
+            let mut target_radius = if dist < min_range as f32 {
+                min_range as f32
+            } else if dist > max_range as f32 {
+                max_range as f32
+            } else {
+                dist as f32
+            };
+            const MAX_PATHFIND_ATTEMPTS: u8 = 5;
+
+            for _ in 0..MAX_PATHFIND_ATTEMPTS {
+                let target = vec2(player.x as f32 + 0.5, player.y as f32 + 0.5)
+                    + Vec2::from_angle(self.favorite_angle) * target_radius;
+                if target.distance(vec2(player.x as f32, player.y as f32)) < min_range as f32 {
+                    target_radius += 1.0;
+                    continue;
+                }
+                self.last_pathfind_target = Some(target.floor());
+                let target_usize = (target.x as usize, target.y as usize);
+                if target_usize == (self.x, self.y) {
+                    return EnemyAction::Wait;
+                }
+
+                let path = dungeon.pathfind((self.x, self.y), target_usize);
+                if let Some((path, _)) = path
+                    && let Some(next) = path.get(1)
+                {
+                    return EnemyAction::MoveTo(*next);
+                } else {
+                    self.favorite_angle =
+                        delta.to_angle() + PI + rand::gen_range(-PI / 2.0, PI / 2.0);
+                }
             }
         }
         EnemyAction::Wait
@@ -346,5 +407,18 @@ impl Enemy {
                 None,
             );
         }
+
+        // if let Some(target) = &self.last_pathfind_target {
+        //     draw_rectangle_lines(target.x * 8.0, target.y * 8.0, 8.0, 8.0, 2.0, RED);
+        // }
+        // let angle_vec = Vec2::from_angle(self.favorite_angle);
+        // draw_line(
+        //     self.draw_pos.x + 4.0,
+        //     self.draw_pos.y + 4.0,
+        //     self.draw_pos.x + 4.0 + angle_vec.x * 12.0,
+        //     self.draw_pos.y + 4.0 + angle_vec.y * 12.0,
+        //     2.0,
+        //     YELLOW,
+        // );
     }
 }

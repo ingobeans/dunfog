@@ -32,6 +32,14 @@ impl Dungeon {
                     tiles[index] = Tile::Floor;
                     enemies.push(entities::Enemy::new(x, y, &entities::ZOMBIE));
                 }
+                [0, 0, 50, _] => {
+                    tiles[index] = Tile::Floor;
+                    enemies.push(entities::Enemy::new(x, y, &entities::SPIDER));
+                }
+                [220, 220, 0, _] => {
+                    tiles[index] = Tile::Floor;
+                    enemies.push(entities::Enemy::new(x, y, &entities::SKELETON));
+                }
 
                 _ => {}
             }
