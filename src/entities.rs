@@ -31,7 +31,6 @@ pub const DAGGER: Weapon = Weapon {
     attack_range: 0..1,
     base_damage: 2.0,
 };
-#[expect(dead_code)]
 pub const BOW: Weapon = Weapon {
     attack_range: 1..3,
     base_damage: 2.0,
