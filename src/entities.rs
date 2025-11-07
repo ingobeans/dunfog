@@ -277,6 +277,7 @@ pub struct Enemy {
     pub just_awoke: bool,
     pub health: f32,
     pub current_action: Option<EnemyAction>,
+    #[allow(dead_code)]
     last_pathfind_target: Option<Vec2>,
 }
 impl Enemy {
@@ -358,15 +359,36 @@ impl Enemy {
                 dist as f32
             };
             const MAX_PATHFIND_ATTEMPTS: u8 = 5;
+            let mut adjusted = false;
 
             for _ in 0..MAX_PATHFIND_ATTEMPTS {
                 let target = vec2(player.x as f32 + 0.5, player.y as f32 + 0.5)
                     + Vec2::from_angle(self.favorite_angle) * target_radius;
-                if target.distance(vec2(player.x as f32, player.y as f32)) < min_range as f32 {
+                if !adjusted
+                    && target
+                        .floor()
+                        .distance(vec2(player.x as f32, player.y as f32))
+                        < min_range as f32
+                {
+                    adjusted = true;
                     target_radius += 1.0;
                     continue;
+                } else if !adjusted
+                    && target
+                        .floor()
+                        .distance(vec2(player.x as f32, player.y as f32))
+                        .floor()
+                        > max_range as f32
+                {
+                    dbg!(
+                        target
+                            .distance(vec2(player.x as f32, player.y as f32))
+                            .floor()
+                    );
+                    adjusted = true;
+                    target_radius -= 1.0;
+                    continue;
                 }
-                self.last_pathfind_target = Some(target.floor());
                 let target_usize = (target.x as usize, target.y as usize);
                 if target_usize == (self.x, self.y) {
                     return EnemyAction::Wait;
