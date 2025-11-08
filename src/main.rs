@@ -287,9 +287,7 @@ impl<'a> Dunfog<'a> {
             },
         );
 
-        if !matches!(self.inv_state, InventoryState::Closed) {
-            ui::draw_inventory(&mut self.inv_state, &mut self.player, self.assets);
-        }
+        ui::draw_ui(&mut self.inv_state, &mut self.player, self.assets);
     }
 }
 

@@ -9,6 +9,7 @@ pub struct Assets {
     pub crafting: Texture2D,
     pub darkness: Texture2D,
     pub semi_darkness: Texture2D,
+    pub hp: Texture2D,
 }
 impl Default for Assets {
     fn default() -> Self {
@@ -25,6 +26,7 @@ impl Default for Assets {
             crafting: load_ase_texture(include_bytes!("../assets/crafting.ase"), None),
             darkness: load_ase_texture(include_bytes!("../assets/darkness.ase"), None),
             semi_darkness: load_ase_texture(include_bytes!("../assets/semi_darkness.ase"), None),
+            hp: load_ase_texture(include_bytes!("../assets/hp.ase"), None),
         }
     }
 }

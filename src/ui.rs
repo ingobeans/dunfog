@@ -45,7 +45,7 @@ fn slot_index_position(index: usize) -> (usize, usize) {
         }
     }
 }
-pub fn draw_inventory(state: &mut InventoryState, player: &mut Player, assets: &Assets) {
+pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets) {
     let (actual_screen_width, actual_screen_height) = screen_size();
     let scale_factor = (actual_screen_width / SCREEN_WIDTH)
         .min(actual_screen_height / SCREEN_HEIGHT)
@@ -53,23 +53,55 @@ pub fn draw_inventory(state: &mut InventoryState, player: &mut Player, assets: &
         .max(1.0);
     let (mouse_x, mouse_y) = mouse_position();
 
-    let x = (actual_screen_width - (assets.inventory.width() + 8.0) * scale_factor).floor();
-    let y =
-        ((actual_screen_height - (assets.inventory.height() + 11.0) * scale_factor) / 2.0).floor();
+    // draw healthbar
+
+    draw_rectangle(
+        (2.0 + 10.0) * scale_factor,
+        (2.0 + 2.0) * scale_factor,
+        84.0 * scale_factor,
+        9.0 * scale_factor,
+        BLACK,
+    );
+    draw_rectangle(
+        (2.0 + 10.0) * scale_factor,
+        (2.0 + 2.0) * scale_factor,
+        (84.0 * scale_factor * player.health / MAX_PLAYER_HP).floor(),
+        9.0 * scale_factor,
+        Color::from_hex(0x63c74d),
+    );
+
+    draw_texture_ex(
+        &assets.hp,
+        2.0 * scale_factor,
+        2.0 * scale_factor,
+        WHITE,
+        DrawTextureParams {
+            dest_size: Some(vec2(
+                assets.hp.width() * scale_factor,
+                assets.hp.height() * scale_factor,
+            )),
+            ..Default::default()
+        },
+    );
 
     let clicking = is_mouse_button_pressed(MouseButton::Left);
 
-    if clicking
-        && (x..x + 15.0 * scale_factor).contains(&mouse_x)
-        && (y..y + 11.0 * scale_factor).contains(&mouse_y)
-    {
-        *state = InventoryState::Inventory
-    }
-    if clicking
-        && (x + 20.0 * scale_factor..x + (20.0 + 15.0) * scale_factor).contains(&mouse_x)
-        && (y..y + 11.0 * scale_factor).contains(&mouse_y)
-    {
-        *state = InventoryState::Crafting
+    let x = (actual_screen_width - (assets.inventory.width() + 8.0) * scale_factor).floor();
+    let y =
+        ((actual_screen_height - (assets.inventory.height() + 11.0) * scale_factor) / 2.0).floor();
+    if !matches!(state, InventoryState::Closed) {
+        if clicking
+            && (x..x + 15.0 * scale_factor).contains(&mouse_x)
+            && (y..y + 11.0 * scale_factor).contains(&mouse_y)
+        {
+            *state = InventoryState::Inventory
+        }
+        if clicking
+            && (x + 20.0 * scale_factor..x + (20.0 + 15.0) * scale_factor).contains(&mouse_x)
+            && (y..y + 11.0 * scale_factor).contains(&mouse_y)
+        {
+            *state = InventoryState::Crafting
+        }
     }
 
     match state {

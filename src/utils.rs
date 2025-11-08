@@ -14,6 +14,7 @@ pub const TILES_HORIZONTAL: usize = SCREEN_WIDTH as usize / 8;
 pub const TILES_VERTICAL: usize = SCREEN_HEIGHT as usize / 8;
 
 pub const ACTION_TIME: f32 = 0.15;
+pub const MAX_PLAYER_HP: f32 = 25.0;
 
 pub fn create_camera(w: f32, h: f32) -> Camera2D {
     let rt = render_target(w as u32, h as u32);

@@ -94,7 +94,7 @@ impl Default for Player {
             tile_status: vec![TileStatus::Unknown; TILES_HORIZONTAL * TILES_VERTICAL],
             inventory,
             cursor_item: None,
-            health: 40.0,
+            health: MAX_PLAYER_HP,
             was_damaged: false,
         }
     }
