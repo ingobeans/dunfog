@@ -76,6 +76,8 @@ pub struct Player {
     pub tile_status: Vec<TileStatus>,
     pub inventory: Vec<Option<Item>>,
     pub cursor_item: Option<Item>,
+    pub health: f32,
+    pub was_damaged: bool,
 }
 impl Default for Player {
     fn default() -> Self {
@@ -92,14 +94,22 @@ impl Default for Player {
             tile_status: vec![TileStatus::Unknown; TILES_HORIZONTAL * TILES_VERTICAL],
             inventory,
             cursor_item: None,
+            health: 40.0,
+            was_damaged: false,
         }
     }
 }
 impl Player {
     pub fn draw(&self, assets: &assets::Assets, _time_since_start: f64) {
+        if self.was_damaged {
+            gl_use_material(&DAMAGE_MATERIAL);
+        }
         assets
             .tileset
             .draw_tile(self.draw_pos.x, self.draw_pos.y, 0.0, 2.0, None);
+        if self.was_damaged {
+            gl_use_default_material();
+        }
         if let Some(Item::Weapon(item)) = &self.inventory[0] {
             assets.items.draw_tile(
                 self.draw_pos.x - 4.0,
@@ -240,6 +250,9 @@ impl Player {
     /// Returns whether player performed an action, and subsequently game should let all enemies act.
     pub fn update_idle(&mut self, dungeon: &mut Dungeon, _delta_time: f32) -> Option<PlayerAction> {
         self.reset_draw_pos();
+        if self.was_damaged {
+            self.was_damaged = false;
+        }
         let input = if let Some(step) = self.moving_to.pop() {
             let x = step.0 as f32 - self.x as f32;
             let y = step.1 as f32 - self.y as f32;
@@ -312,6 +325,7 @@ pub static SPIDER: EnemyType = EnemyType {
 
 pub enum EnemyAction {
     MoveTo((usize, usize)),
+    Attack(Vec2),
     Wait,
 }
 
@@ -354,9 +368,10 @@ impl Enemy {
         self.just_awoke = true;
     }
     pub fn update(&mut self, delta_time: f32, state: &GameState) {
-        if let GameState::EnemyAction(_time) = state
+        if let GameState::EnemyAction(time) = state
             && let Some(current_action) = &self.current_action
         {
+            let animation_time = ACTION_TIME - *time;
             match current_action {
                 EnemyAction::Wait => {}
                 EnemyAction::MoveTo(pos) => {
@@ -369,6 +384,10 @@ impl Enemy {
                         self.draw_pos += delta.normalize() * speed;
                     }
                 }
+                EnemyAction::Attack(dir) => {
+                    self.draw_pos = vec2((self.x * 8) as f32, (self.y * 8) as f32);
+                    self.draw_pos += *dir * (animation_time / ACTION_TIME * PI).sin() * 3.0;
+                }
             }
         } else {
             self.reset_draw_pos();
@@ -380,6 +399,20 @@ impl Enemy {
         }
         if self.was_attacked {
             self.was_attacked = false;
+        }
+        let delta = vec2(
+            player.x as f32 - self.x as f32,
+            player.y as f32 - self.y as f32,
+        );
+        if self
+            .ty
+            .weapon
+            .attack_range
+            .contains(&((delta.length() - 1.0) as usize))
+        {
+            player.health -= self.ty.weapon.base_damage;
+            player.was_damaged = true;
+            return EnemyAction::Attack(delta.normalize());
         }
         let should_pathfind = match &self.ty.movement_type {
             MovementType::ChaseWhenVisible
@@ -396,10 +429,6 @@ impl Enemy {
         if should_pathfind {
             // decide whether to move away from or towards player.
             // usually it moves towards player, but if weapon min range is larger that the dist to player, move away
-            let delta = vec2(
-                player.x as f32 - self.x as f32,
-                player.y as f32 - self.y as f32,
-            );
             let dist = delta.length();
 
             let min_range = self.ty.weapon.attack_range.clone().min().unwrap_or(0) + 1;
