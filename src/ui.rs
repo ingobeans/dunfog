@@ -2,8 +2,8 @@ use macroquad::prelude::*;
 
 use crate::{assets::Assets, entities::Player, utils::*};
 
-const UI_BACKGROUND: Color = Color::from_hex(0x8747ff);
-const UI_BORDER: Color = Color::from_hex(0x4e2bd6);
+const UI_BACKGROUND: Color = Color::from_hex(0x8b9bb4);
+const UI_BORDER: Color = Color::from_hex(0xc0cbdc);
 
 pub enum InventoryState {
     Closed,
