@@ -1,13 +1,14 @@
 #![expect(irrefutable_let_patterns)]
 use std::f32::consts::PI;
 
-use crate::{GameState, assets, dungeon::Dungeon, utils::*};
+use crate::{GameState, Tile, assets, dungeon::Dungeon, utils::*};
 use macroquad::prelude::*;
 
 pub enum PlayerAction {
     MoveDirection(Vec2),
     Attack(Vec2),
     Wait,
+    GotoNextDungeon,
 }
 #[derive(Clone, Copy)]
 pub enum TileStatus {
@@ -169,7 +170,12 @@ impl Player {
         delta_time: f32,
         state: &GameState,
         click: Option<(usize, usize)>,
-    ) -> bool {
+    ) -> Option<PlayerAction> {
+        if let Tile::Door = dungeon.tiles[self.x + self.y * TILES_HORIZONTAL]
+            && let GameState::Idle = state
+        {
+            return Some(PlayerAction::GotoNextDungeon);
+        }
         if let Some((tile_x, tile_y)) = click
             && dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable()
             && !self.tile_status[tile_x + tile_y * TILES_HORIZONTAL].is_unknown()
@@ -187,9 +193,8 @@ impl Player {
                         .attack_range
                         .contains(&((delta.length() - 1.0) as usize))
                 {
-                    self.active_action = Some(PlayerAction::Attack(delta.normalize()));
                     enemy.health -= weapon.base_damage;
-                    return true;
+                    return Some(PlayerAction::Attack(delta.normalize()));
                 }
             } else {
                 let goal = (tile_x, tile_y);
@@ -203,10 +208,10 @@ impl Player {
         match state {
             GameState::PlayerAction(time) => {
                 self.update_action(dungeon, delta_time, ACTION_TIME - *time);
-                false
+                None
             }
             GameState::Idle => self.update_idle(dungeon, delta_time),
-            _ => false,
+            _ => None,
         }
     }
     /// Called each frame while an action is being performed,
@@ -226,13 +231,13 @@ impl Player {
                 self.draw_pos = vec2((self.x * 8) as f32, (self.y * 8) as f32);
                 self.draw_pos += *dir * (animation_time / ACTION_TIME * PI).sin() * 3.0;
             }
-            PlayerAction::Wait => {}
+            _ => {}
         }
     }
     /// Called each frame when no action is being performed.
     ///
     /// Returns whether player performed an action, and subsequently game should let all enemies act.
-    pub fn update_idle(&mut self, dungeon: &mut Dungeon, _delta_time: f32) -> bool {
+    pub fn update_idle(&mut self, dungeon: &mut Dungeon, _delta_time: f32) -> Option<PlayerAction> {
         self.reset_draw_pos();
         let input = if let Some(step) = self.moving_to.pop() {
             let x = step.0 as f32 - self.x as f32;
@@ -251,23 +256,20 @@ impl Player {
                 if let Item::Weapon(weapon) = &self.inventory[0].unwrap_or(Item::Weapon(&MELEE))
                     && weapon.attack_range.contains(&0)
                 {
-                    self.active_action = Some(PlayerAction::Attack(input));
                     enemy.health -= weapon.base_damage;
-                    return true;
+                    return Some(PlayerAction::Attack(input));
                 }
             } else if dungeon.tiles[new.0 + new.1 * TILES_HORIZONTAL].is_walkable() {
                 (self.x, self.y) = new;
                 self.get_visible_tiles(dungeon);
-                self.active_action = Some(PlayerAction::MoveDirection(input));
-                return true;
+                return Some(PlayerAction::MoveDirection(input));
             }
         }
         if is_key_pressed(KeyCode::H) {
-            self.active_action = Some(PlayerAction::Wait);
-            return true;
+            return Some(PlayerAction::Wait);
         }
 
-        false
+        None
     }
 }
 

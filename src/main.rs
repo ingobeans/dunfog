@@ -14,11 +14,12 @@ enum Tile {
     Floor,
     Wall,
     Path,
+    Door,
 }
 
 impl Tile {
     fn is_walkable(self) -> bool {
-        matches!(self, Tile::Floor | Tile::Path)
+        matches!(self, Tile::Floor | Tile::Path | Tile::Door)
     }
 }
 
@@ -32,6 +33,7 @@ enum GameState {
 
 struct Dunfog<'a> {
     player: entities::Player,
+    floor: usize,
     dungeon: Dungeon,
     assets: &'a Assets,
     world_camera: Camera2D,
@@ -51,6 +53,7 @@ impl<'a> Dunfog<'a> {
         Self {
             player,
             dungeon,
+            floor: 0,
             assets,
             world_camera,
             ui_camera,
@@ -190,11 +193,25 @@ impl<'a> Dunfog<'a> {
 
         if matches!(self.inv_state, InventoryState::Closed) {
             self.update_gamestate(delta_time);
-            if self
-                .player
-                .update(&mut self.dungeon, delta_time, &self.state, click)
+            if let Some(action) =
+                self.player
+                    .update(&mut self.dungeon, delta_time, &self.state, click)
             {
-                self.state = GameState::PlayerAction(ACTION_TIME);
+                if let entities::PlayerAction::GotoNextDungeon = action {
+                    self.floor += 1;
+                    self.dungeon = Dungeon::generate_dungeon(&FIRST_FLOOR);
+                    self.player.tile_status =
+                        vec![entities::TileStatus::Unknown; TILES_HORIZONTAL * TILES_VERTICAL];
+                    self.player
+                        .move_to(self.dungeon.player_spawn, &self.dungeon);
+                    self.player.center_camera((
+                        actual_screen_width / scale_factor,
+                        actual_screen_height / scale_factor,
+                    ));
+                } else {
+                    self.player.active_action = Some(action);
+                    self.state = GameState::PlayerAction(ACTION_TIME);
+                }
             }
             for enemy in self.dungeon.enemies.iter_mut() {
                 enemy.update(delta_time, &self.state);
