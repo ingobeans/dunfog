@@ -79,7 +79,7 @@ pub struct Player {
 }
 impl Default for Player {
     fn default() -> Self {
-        let mut inventory = vec![None; 11];
+        let mut inventory = vec![None; 14];
         inventory[0] = Some(Item::Weapon(&DAGGER));
         Self {
             active_action: None,

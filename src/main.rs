@@ -37,7 +37,6 @@ struct Dunfog<'a> {
     dungeon: Dungeon,
     assets: &'a Assets,
     world_camera: Camera2D,
-    ui_camera: Camera2D,
     state: GameState,
     inv_state: InventoryState,
 }
@@ -48,15 +47,12 @@ impl<'a> Dunfog<'a> {
         player.center_camera((SCREEN_WIDTH, SCREEN_HEIGHT));
         let mut world_camera = create_camera(SCREEN_WIDTH, SCREEN_HEIGHT);
         world_camera.target = vec2(SCREEN_WIDTH / 2.0, SCREEN_HEIGHT / 2.0);
-        let mut ui_camera = create_camera(SCREEN_WIDTH, SCREEN_HEIGHT);
-        ui_camera.target = vec2(SCREEN_WIDTH / 2.0, SCREEN_HEIGHT / 2.0);
         Self {
             player,
             dungeon,
             floor: 0,
             assets,
             world_camera,
-            ui_camera,
             state: GameState::Idle,
             inv_state: InventoryState::Closed,
         }
@@ -274,21 +270,9 @@ impl<'a> Dunfog<'a> {
                 .tileset
                 .draw_tile(mouse_tile_x * 8.0, mouse_tile_y * 8.0, 2.0, 0.0, None);
         }
-
-        set_camera(&self.ui_camera);
-        clear_background(BLACK.with_alpha(0.0));
-        if !matches!(self.inv_state, InventoryState::Closed) {
-            ui::draw_inventory(
-                &mut self.inv_state,
-                &mut self.player,
-                self.assets,
-                mouse_x - actual_screen_width / scale_factor + SCREEN_WIDTH,
-                mouse_y,
-            );
-        }
-
         set_default_camera();
         clear_background(BLACK);
+
         draw_texture_ex(
             &self.world_camera.render_target.as_ref().unwrap().texture,
             -self.player.camera_pos.x * scale_factor * self.player.camera_zoom,
@@ -302,19 +286,10 @@ impl<'a> Dunfog<'a> {
                 ..Default::default()
             },
         );
-        draw_texture_ex(
-            &self.ui_camera.render_target.as_ref().unwrap().texture,
-            actual_screen_width - SCREEN_WIDTH * scale_factor,
-            0.0,
-            WHITE,
-            DrawTextureParams {
-                dest_size: Some(Vec2::new(
-                    SCREEN_WIDTH * scale_factor,
-                    SCREEN_HEIGHT * scale_factor,
-                )),
-                ..Default::default()
-            },
-        );
+
+        if !matches!(self.inv_state, InventoryState::Closed) {
+            ui::draw_inventory(&mut self.inv_state, &mut self.player, self.assets);
+        }
     }
 }
 
