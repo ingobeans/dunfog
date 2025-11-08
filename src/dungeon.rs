@@ -5,11 +5,13 @@ use crate::Tile;
 use crate::entities;
 use crate::utils::*;
 
+type PerRoomFn =
+    &'static dyn Fn(usize, usize, usize, usize, &mut Vec<Tile>, &mut Vec<entities::Enemy>);
+
 pub struct DungeonFloor {
     pub rooms_area: usize,
     pub get_sprite: &'static dyn Fn(&Tile) -> (f32, f32),
-    pub per_room_fn:
-        &'static dyn Fn(usize, usize, usize, usize, &mut Vec<Tile>, &mut Vec<entities::Enemy>),
+    pub per_room_fn: PerRoomFn,
 }
 
 fn get_tile(tile: &Tile) -> (f32, f32) {

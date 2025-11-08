@@ -19,7 +19,7 @@ impl InventoryState {
         }
     }
 }
-
+#[expect(dead_code)]
 pub fn ui_rect(x: f32, y: f32, w: f32, h: f32) {
     draw_rectangle(x, y, w, h, UI_BORDER);
     draw_rectangle(x + 1.0, y + 1.0, w - 2.0, h - 2.0, UI_BACKGROUND);
@@ -68,9 +68,8 @@ pub fn draw_inventory(
             let hovered_index = player.inventory.iter().enumerate().position(|(i, _)| {
                 let (slot_x, slot_y) = slot_index_position(i);
 
-                let hovered = ((slot_x as f32 + x)..(slot_x as f32 + x + 12.0)).contains(&mouse_x)
-                    && ((slot_y as f32 + y)..(slot_y as f32 + y + 12.0)).contains(&mouse_y);
-                hovered
+                ((slot_x as f32 + x)..(slot_x as f32 + x + 12.0)).contains(&mouse_x)
+                    && ((slot_y as f32 + y)..(slot_y as f32 + y + 12.0)).contains(&mouse_y)
             });
             if clicking && let Some(i) = hovered_index {
                 std::mem::swap(&mut player.inventory[i], &mut player.cursor_item);

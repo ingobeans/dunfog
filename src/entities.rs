@@ -1,3 +1,4 @@
+#![expect(irrefutable_let_patterns)]
 use std::f32::consts::PI;
 
 use crate::{GameState, assets, dungeon::Dungeon, utils::*};
