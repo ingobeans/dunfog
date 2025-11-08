@@ -186,16 +186,16 @@ impl Player {
         {
             return Some(PlayerAction::GotoNextDungeon);
         }
-        if let Some((tile_x, tile_y)) = click
+        if let GameState::Idle = state
+            && let Some((tile_x, tile_y)) = click
             && dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable()
             && !self.tile_status[tile_x + tile_y * TILES_HORIZONTAL].is_unknown()
         {
             // if we click an enemy which is in range, attack it.
-            if let GameState::Idle = state
-                && let Some(enemy) = dungeon
-                    .enemies
-                    .iter_mut()
-                    .find(|f| (f.x, f.y) == (tile_x, tile_y))
+            if let Some(enemy) = dungeon
+                .enemies
+                .iter_mut()
+                .find(|f| (f.x, f.y) == (tile_x, tile_y))
             {
                 let delta = vec2(tile_x as f32 - self.x as f32, tile_y as f32 - self.y as f32);
                 if let Item::Weapon(weapon) = &self.inventory[0].unwrap_or(Item::Weapon(&MELEE))
