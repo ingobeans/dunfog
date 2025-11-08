@@ -1,5 +1,9 @@
-use macroquad::prelude::*;
+use std::sync::LazyLock;
 
+use macroquad::{
+    miniquad::{BlendFactor, BlendState, BlendValue, Equation},
+    prelude::*,
+};
 pub const SCREEN_WIDTH: f32 = 256.0;
 pub const SCREEN_HEIGHT: f32 = 144.0;
 
@@ -37,3 +41,70 @@ pub fn get_input_axis() -> Vec2 {
     }
     i
 }
+pub static DAMAGE_MATERIAL: LazyLock<Material> = LazyLock::new(|| {
+    // to enable transparency!
+    let pipeline = PipelineParams {
+        alpha_blend: Some(BlendState::new(
+            Equation::Add,
+            BlendFactor::Value(BlendValue::SourceAlpha),
+            BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
+        )),
+        color_blend: Some(BlendState::new(
+            Equation::Add,
+            BlendFactor::Value(BlendValue::SourceAlpha),
+            BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
+        )),
+        ..Default::default()
+    };
+    let m = load_material(
+        ShaderSource::Glsl {
+            vertex: DEFAULT_VERTEX_SHADER,
+            fragment: DAMAGE_FRAGMENT,
+        },
+        MaterialParams {
+            pipeline_params: pipeline,
+            uniforms: vec![UniformDesc::new("color", UniformType::Float4)],
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    m.set_uniform("color", Color::from_rgba(255, 0, 25, 159));
+    m
+});
+
+pub const DAMAGE_FRAGMENT: &str = "#version 100
+precision lowp float;
+
+varying vec2 uv;
+
+uniform lowp vec4 color;
+
+uniform sampler2D Texture;
+
+void main() {
+    vec4 c = texture2D(Texture, uv);
+    if (c.a > 0.0) {
+        vec4 fa = vec4(color.rgb,1.0);
+        gl_FragColor = mix(c,fa,color.a);
+    } else {
+        gl_FragColor = texture2D(Texture, uv);
+    }
+}
+";
+
+pub const DEFAULT_VERTEX_SHADER: &str = "#version 100
+precision lowp float;
+
+attribute vec3 position;
+attribute vec2 texcoord;
+
+varying vec2 uv;
+
+uniform mat4 Model;
+uniform mat4 Projection;
+
+void main() {
+    gl_Position = Projection * Model * vec4(position, 1);
+    uv = texcoord;
+}
+";

@@ -194,6 +194,7 @@ impl Player {
                         .contains(&((delta.length() - 1.0) as usize))
                 {
                     enemy.health -= weapon.base_damage;
+                    enemy.was_attacked = true;
                     return Some(PlayerAction::Attack(delta.normalize()));
                 }
             } else {
@@ -257,6 +258,7 @@ impl Player {
                     && weapon.attack_range.contains(&0)
                 {
                     enemy.health -= weapon.base_damage;
+                    enemy.was_attacked = true;
                     return Some(PlayerAction::Attack(input));
                 }
             } else if dungeon.tiles[new.0 + new.1 * TILES_HORIZONTAL].is_walkable() {
@@ -322,6 +324,7 @@ pub struct Enemy {
     pub ty: &'static EnemyType,
     pub awake: bool,
     pub just_awoke: bool,
+    pub was_attacked: bool,
     pub health: f32,
     pub current_action: Option<EnemyAction>,
     #[allow(dead_code)]
@@ -337,6 +340,7 @@ impl Enemy {
             ty,
             awake: false,
             just_awoke: false,
+            was_attacked: false,
             health: ty.max_health,
             current_action: None,
             last_pathfind_target: None,
@@ -373,6 +377,9 @@ impl Enemy {
     pub fn act(&mut self, dungeon: &Dungeon, player: &mut Player) -> EnemyAction {
         if self.just_awoke {
             self.just_awoke = false;
+        }
+        if self.was_attacked {
+            self.was_attacked = false;
         }
         let should_pathfind = match &self.ty.movement_type {
             MovementType::ChaseWhenVisible
@@ -455,6 +462,9 @@ impl Enemy {
         EnemyAction::Wait
     }
     pub fn draw(&self, assets: &assets::Assets, time_since_start: f64) {
+        if self.was_attacked {
+            gl_use_material(&DAMAGE_MATERIAL);
+        }
         assets.tileset.draw_tile(
             self.draw_pos.x,
             self.draw_pos.y,
@@ -462,6 +472,9 @@ impl Enemy {
             self.ty.sprite_y,
             None,
         );
+        if self.was_attacked {
+            gl_use_default_material();
+        }
         if !self.awake || self.just_awoke {
             let tile_x = if !self.awake { 3.0 } else { 4.0 };
             // modulate sleep bubble based on sin of time
