@@ -10,6 +10,7 @@ pub struct Assets {
     pub darkness: Texture2D,
     pub semi_darkness: Texture2D,
     pub hp: Texture2D,
+    pub font: Font,
 }
 impl Default for Assets {
     fn default() -> Self {
@@ -27,6 +28,7 @@ impl Default for Assets {
             darkness: load_ase_texture(include_bytes!("../assets/darkness.ase"), None),
             semi_darkness: load_ase_texture(include_bytes!("../assets/semi_darkness.ase"), None),
             hp: load_ase_texture(include_bytes!("../assets/hp.ase"), None),
+            font: load_ttf_font_from_bytes(include_bytes!("../assets/novem.ttf")).unwrap(),
         }
     }
 }
