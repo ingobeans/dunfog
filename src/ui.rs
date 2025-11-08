@@ -45,6 +45,50 @@ fn slot_index_position(index: usize) -> (usize, usize) {
         }
     }
 }
+pub fn draw_item_hover_info(
+    item: &Item,
+    assets: &Assets,
+    mouse_x: f32,
+    mouse_y: f32,
+    scale_factor: f32,
+) {
+    let x = mouse_x - assets.hover_card.width() * scale_factor + 2.0 * scale_factor;
+    let y = mouse_y - assets.hover_card.height() * scale_factor + 2.0 * scale_factor;
+    draw_texture_ex(
+        &assets.hover_card,
+        x,
+        y,
+        WHITE,
+        DrawTextureParams {
+            dest_size: Some(vec2(
+                assets.hover_card.width() * scale_factor,
+                assets.hover_card.height() * scale_factor,
+            )),
+            ..Default::default()
+        },
+    );
+    let sprite = item.get_sprite();
+    assets.items.draw_tile(
+        x + 3.0 * scale_factor,
+        y + 3.0 * scale_factor,
+        sprite.x,
+        sprite.y,
+        Some(&DrawTextureParams {
+            dest_size: Some(vec2(8.0 * scale_factor, 8.0 * scale_factor)),
+            ..Default::default()
+        }),
+    );
+    draw_text_ex(
+        &item.get_name().to_uppercase(),
+        x + 13.0 * scale_factor,
+        y + 10.0 * scale_factor,
+        TextParams {
+            font: Some(&assets.font),
+            font_size: (scale_factor * 8.0) as u16,
+            ..Default::default()
+        },
+    );
+}
 pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets) {
     let (actual_screen_width, actual_screen_height) = screen_size();
     let scale_factor = (actual_screen_width / SCREEN_WIDTH)
@@ -192,6 +236,12 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                         ..Default::default()
                     }),
                 );
+            }
+
+            if let Some(hover) = hovered_index
+                && let Some(item) = &player.inventory[hover]
+            {
+                draw_item_hover_info(item, assets, mouse_x, mouse_y, scale_factor);
             }
         }
         InventoryState::Crafting => {

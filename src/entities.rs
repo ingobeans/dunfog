@@ -26,24 +26,28 @@ pub struct Weapon {
     pub base_damage: f32,
     pub sprite_x: f32,
     pub sprite_y: f32,
+    pub name: &'static str,
 }
 pub const MELEE: Weapon = Weapon {
     attack_range: 0..1,
     base_damage: 1.0,
     sprite_x: 0.0,
     sprite_y: 0.0,
+    name: "melee",
 };
 pub const DAGGER: Weapon = Weapon {
     attack_range: 0..1,
     base_damage: 2.0,
     sprite_x: 1.0,
     sprite_y: 0.0,
+    name: "dagger",
 };
 pub const BOW: Weapon = Weapon {
     attack_range: 1..3,
     base_damage: 2.0,
     sprite_x: 2.0,
     sprite_y: 0.0,
+    name: "bow",
 };
 #[derive(Clone, Copy)]
 pub enum Item {
@@ -53,6 +57,11 @@ impl Item {
     pub fn get_sprite(&self) -> Vec2 {
         match &self {
             Item::Weapon(weapon) => vec2(weapon.sprite_x, weapon.sprite_y),
+        }
+    }
+    pub fn get_name(&self) -> &'static str {
+        match &self {
+            Item::Weapon(weapon) => weapon.name,
         }
     }
     // fn unwrap_weapon(&self) -> &'static Weapon {
