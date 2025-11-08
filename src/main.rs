@@ -1,7 +1,7 @@
 use macroquad::{miniquad::window::screen_size, prelude::*, rand};
 use utils::*;
 
-use crate::{assets::Assets, dungeon::Dungeon, ui::InventoryState};
+use crate::{assets::Assets, dungeon::*, ui::InventoryState};
 
 mod assets;
 mod dungeon;
@@ -19,14 +19,6 @@ enum Tile {
 impl Tile {
     fn is_walkable(self) -> bool {
         matches!(self, Tile::Floor | Tile::Path)
-    }
-    fn get_tile(self) -> (f32, f32) {
-        #[expect(unreachable_patterns)]
-        match self {
-            Tile::Floor | Tile::Path => (0.0, 1.0),
-            Tile::Path => (1.0, 1.0),
-            Tile::Wall => (0.0, 0.0),
-        }
     }
 }
 
@@ -215,7 +207,7 @@ impl<'a> Dunfog<'a> {
         for (i, tile) in self.dungeon.tiles.iter().enumerate() {
             let y = i / TILES_HORIZONTAL;
             let x = i % TILES_HORIZONTAL;
-            let (tile_x, tile_y) = tile.get_tile();
+            let (tile_x, tile_y) = (self.dungeon.dungeon_floor.get_sprite)(tile);
             if !self.player.tile_status[x + y * TILES_HORIZONTAL].is_unknown() {
                 self.assets
                     .tileset
@@ -313,6 +305,7 @@ impl<'a> Dunfog<'a> {
 async fn main() {
     let use_testing_dungeon = std::env::args().any(|f| f.as_str() == "test");
     let seed = miniquad::date::now().to_bits();
+    let seed = 4745179711459028189;
     rand::srand(seed);
     println!("dunfog v{} - seed: {seed}", env!("CARGO_PKG_VERSION"));
     let assets = assets::Assets::default();
@@ -323,25 +316,12 @@ async fn main() {
                 .unwrap(),
         )
     } else {
-        Dungeon::generate_dungeon()
+        Dungeon::generate_dungeon(&FIRST_FLOOR)
     };
 
     let mut dunfog = Dunfog::new(&assets, dungeon);
     loop {
         dunfog.update();
         next_frame().await
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::{Tile, is_all_rooms_connected, utils::*};
-
-    #[test]
-    fn test_rooms_connected() {
-        let mut tiles = vec![Tile::Wall; TILES_HORIZONTAL * TILES_VERTICAL];
-        tiles[0] = Tile::Floor;
-        tiles[1] = Tile::Floor;
-        assert!(is_all_rooms_connected(&tiles))
     }
 }

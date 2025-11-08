@@ -5,10 +5,38 @@ use crate::Tile;
 use crate::entities;
 use crate::utils::*;
 
+pub struct DungeonFloor {
+    pub rooms_area: usize,
+    pub get_sprite: &'static dyn Fn(&Tile) -> (f32, f32),
+    pub per_room_fn:
+        &'static dyn Fn(usize, usize, usize, usize, &mut Vec<Tile>, &mut Vec<entities::Enemy>),
+}
+
+fn get_tile(tile: &Tile) -> (f32, f32) {
+    #[expect(unreachable_patterns)]
+    match tile {
+        Tile::Floor | Tile::Path => (0.0, 1.0),
+        Tile::Path => (1.0, 1.0),
+        Tile::Wall => (0.0, 0.0),
+    }
+}
+pub const FIRST_FLOOR: DungeonFloor = DungeonFloor {
+    rooms_area: 5 * 5 * 5,
+    get_sprite: &get_tile,
+    per_room_fn: &|x: usize, y: usize, w: usize, h: usize, _, enemies| {
+        enemies.push(entities::Enemy::new(
+            x + rand::gen_range(0, w),
+            y + rand::gen_range(0, h),
+            &entities::ZOMBIE,
+        ));
+    },
+};
+
 pub struct Dungeon {
     pub tiles: Vec<Tile>,
     pub player_spawn: (usize, usize),
     pub enemies: Vec<entities::Enemy>,
+    pub dungeon_floor: &'static DungeonFloor,
 }
 impl Dungeon {
     pub fn load_from_file(image: Image) -> Self {
@@ -48,13 +76,14 @@ impl Dungeon {
             tiles,
             player_spawn,
             enemies,
+            dungeon_floor: &FIRST_FLOOR,
         }
     }
-    pub fn generate_dungeon() -> Self {
+    pub fn generate_dungeon(dungeon_floor: &'static DungeonFloor) -> Self {
         let mut enemies = Vec::new();
         let mut tiles = vec![Tile::Wall; TILES_HORIZONTAL * TILES_VERTICAL];
 
-        let rooms_area = 5 * 5 * 5;
+        let rooms_area = dungeon_floor.rooms_area;
         let mut area_left = rooms_area;
         let mut rooms: Vec<(usize, usize, usize, usize)> = Vec::new();
         let mut player_spawn = None;
@@ -76,11 +105,7 @@ impl Dungeon {
             if player_spawn.is_none() {
                 player_spawn = Some((x, y))
             } else {
-                enemies.push(entities::Enemy::new(
-                    x + rand::gen_range(0, w),
-                    y + rand::gen_range(0, h),
-                    &entities::ZOMBIE,
-                ));
+                (dungeon_floor.per_room_fn)(x, y, w, h, &mut tiles, &mut enemies)
             }
             area_left -= area;
 
@@ -139,6 +164,7 @@ impl Dungeon {
             tiles,
             player_spawn: player_spawn.unwrap(),
             enemies,
+            dungeon_floor,
         }
     }
 
@@ -173,3 +199,64 @@ impl Dungeon {
 }
 type SuccessorIterator =
     Map<std::vec::IntoIter<(usize, usize)>, fn((usize, usize)) -> ((usize, usize), usize)>;
+
+pub fn is_all_rooms_connected(tiles: &[Tile]) -> bool {
+    // algorithm:
+    // 1. counts total floor tiles.
+    // 2. finds first floor tile.
+    // 3. recursively follows all floor tile neighbours
+    //    until end and counts how many total connected tiles there are
+
+    let total = tiles.iter().filter(|f| f.is_walkable()).count();
+
+    fn count_connected(
+        x: usize,
+        y: usize,
+        tiles: &[Tile],
+        marked: &mut Vec<(usize, usize)>,
+    ) -> usize {
+        if !tiles[x + y * TILES_HORIZONTAL].is_walkable() {
+            return 0;
+        }
+        if marked.contains(&(x, y)) {
+            return 0;
+        }
+        marked.push((x, y));
+        let mut count = 1;
+        if x > 0 {
+            count += count_connected(x - 1, y, tiles, marked);
+        }
+        if x < TILES_HORIZONTAL - 1 {
+            count += count_connected(x + 1, y, tiles, marked);
+        }
+        if y > 0 {
+            count += count_connected(x, y - 1, tiles, marked);
+        }
+        if y < TILES_VERTICAL - 1 {
+            count += count_connected(x, y + 1, tiles, marked);
+        }
+        count
+    }
+    // find first floor tile
+    for (i, tile) in tiles.iter().enumerate() {
+        if tile.is_walkable() {
+            let y = i / (TILES_HORIZONTAL);
+            let x = i % (TILES_HORIZONTAL);
+            return count_connected(x, y, tiles, &mut Vec::new()) == total;
+        }
+    }
+    false
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{Tile, dungeon::is_all_rooms_connected, utils::*};
+
+    #[test]
+    fn test_rooms_connected() {
+        let mut tiles = vec![Tile::Wall; TILES_HORIZONTAL * TILES_VERTICAL];
+        tiles[0] = Tile::Floor;
+        tiles[1] = Tile::Floor;
+        assert!(is_all_rooms_connected(&tiles))
+    }
+}
