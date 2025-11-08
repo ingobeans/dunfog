@@ -34,13 +34,13 @@ pub const MELEE: Weapon = Weapon {
 pub const DAGGER: Weapon = Weapon {
     attack_range: 0..1,
     base_damage: 2.0,
-    sprite_x: 0.0,
+    sprite_x: 1.0,
     sprite_y: 0.0,
 };
 pub const BOW: Weapon = Weapon {
     attack_range: 1..3,
     base_damage: 2.0,
-    sprite_x: 1.0,
+    sprite_x: 2.0,
     sprite_y: 0.0,
 };
 #[derive(Clone, Copy)]
@@ -98,6 +98,15 @@ impl Player {
         assets
             .tileset
             .draw_tile(self.draw_pos.x, self.draw_pos.y, 0.0, 2.0, None);
+        if let Some(Item::Weapon(item)) = &self.inventory[0] {
+            assets.items.draw_tile(
+                self.draw_pos.x - 4.0,
+                self.draw_pos.y - 2.0,
+                item.sprite_x,
+                item.sprite_y,
+                None,
+            );
+        }
     }
     /// Uses raycasts to see which tiles should be visible by player
     pub fn get_visible_tiles(&mut self, dungeon: &Dungeon) {
@@ -463,6 +472,13 @@ impl Enemy {
                 None,
             );
         }
+        assets.items.draw_tile(
+            self.draw_pos.x - 4.0,
+            self.draw_pos.y - 2.0,
+            self.ty.weapon.sprite_x,
+            self.ty.weapon.sprite_y,
+            None,
+        );
 
         // if let Some(target) = &self.last_pathfind_target {
         //     draw_rectangle_lines(target.x * 8.0, target.y * 8.0, 8.0, 8.0, 2.0, RED);
