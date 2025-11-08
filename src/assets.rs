@@ -6,6 +6,7 @@ pub struct Assets {
     pub tileset: Spritesheet,
     pub items: Spritesheet,
     pub inventory: Texture2D,
+    pub crafting: Texture2D,
     pub darkness: Texture2D,
     pub semi_darkness: Texture2D,
 }
@@ -21,6 +22,7 @@ impl Default for Assets {
                 8.0,
             ),
             inventory: load_ase_texture(include_bytes!("../assets/inventory.ase"), None),
+            crafting: load_ase_texture(include_bytes!("../assets/crafting.ase"), None),
             darkness: load_ase_texture(include_bytes!("../assets/darkness.ase"), None),
             semi_darkness: load_ase_texture(include_bytes!("../assets/semi_darkness.ase"), None),
         }

@@ -77,7 +77,7 @@ pub struct Player {
 }
 impl Default for Player {
     fn default() -> Self {
-        let mut inventory = vec![None; 6];
+        let mut inventory = vec![None; 11];
         inventory[0] = Some(Item::Weapon(&DAGGER));
         Self {
             active_action: None,
@@ -165,10 +165,11 @@ impl Player {
             && !self.tile_status[tile_x + tile_y * TILES_HORIZONTAL].is_unknown()
         {
             // if we click an enemy which is in range, attack it.
-            if let Some(enemy) = dungeon
-                .enemies
-                .iter_mut()
-                .find(|f| (f.x, f.y) == (tile_x, tile_y))
+            if let GameState::Idle = state
+                && let Some(enemy) = dungeon
+                    .enemies
+                    .iter_mut()
+                    .find(|f| (f.x, f.y) == (tile_x, tile_y))
             {
                 let delta = vec2(tile_x as f32 - self.x as f32, tile_y as f32 - self.y as f32);
                 if let Item::Weapon(weapon) = &self.inventory[0].unwrap_or(Item::Weapon(&MELEE))

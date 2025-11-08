@@ -1,7 +1,7 @@
 use macroquad::{miniquad::window::screen_size, prelude::*, rand};
 use utils::*;
 
-use crate::{assets::Assets, dungeon::Dungeon};
+use crate::{assets::Assets, dungeon::Dungeon, ui::InventoryState};
 
 mod assets;
 mod dungeon;
@@ -45,7 +45,7 @@ struct Dunfog<'a> {
     world_camera: Camera2D,
     ui_camera: Camera2D,
     state: GameState,
-    inv_open: bool,
+    inv_state: InventoryState,
 }
 impl<'a> Dunfog<'a> {
     fn new(assets: &'a Assets, dungeon: Dungeon) -> Self {
@@ -63,7 +63,7 @@ impl<'a> Dunfog<'a> {
             world_camera,
             ui_camera,
             state: GameState::Idle,
-            inv_open: false,
+            inv_state: InventoryState::Closed,
         }
     }
     fn perform_enemy_actions(&mut self) {
@@ -136,7 +136,7 @@ impl<'a> Dunfog<'a> {
         let delta_time = get_frame_time();
 
         if is_key_pressed(KeyCode::E) || is_key_pressed(KeyCode::Escape) {
-            self.inv_open = !self.inv_open
+            self.inv_state.toggle();
         }
 
         let (mouse_x, mouse_y) = (mouse_x / scale_factor, mouse_y / scale_factor);
@@ -196,7 +196,7 @@ impl<'a> Dunfog<'a> {
             click = Some(cursor_tile)
         }
 
-        if !self.inv_open {
+        if matches!(self.inv_state, InventoryState::Closed) {
             self.update_gamestate(delta_time);
             if self
                 .player
@@ -256,7 +256,7 @@ impl<'a> Dunfog<'a> {
         }
         self.player.draw(self.assets, time);
 
-        if !self.inv_open
+        if matches!(self.inv_state, InventoryState::Closed)
             && let Some((tile_x, tile_y)) = cursor_tile
             && self.dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable()
             && !self.player.tile_status[tile_x + tile_y * TILES_HORIZONTAL].is_unknown()
@@ -268,8 +268,9 @@ impl<'a> Dunfog<'a> {
 
         set_camera(&self.ui_camera);
         clear_background(BLACK.with_alpha(0.0));
-        if self.inv_open {
+        if !matches!(self.inv_state, InventoryState::Closed) {
             ui::draw_inventory(
+                &mut self.inv_state,
                 &mut self.player,
                 self.assets,
                 mouse_x - actual_screen_width / scale_factor + SCREEN_WIDTH,
