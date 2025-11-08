@@ -305,7 +305,6 @@ impl<'a> Dunfog<'a> {
 async fn main() {
     let use_testing_dungeon = std::env::args().any(|f| f.as_str() == "test");
     let seed = miniquad::date::now().to_bits();
-    let seed = 4745179711459028189;
     rand::srand(seed);
     println!("dunfog v{} - seed: {seed}", env!("CARGO_PKG_VERSION"));
     let assets = assets::Assets::default();
