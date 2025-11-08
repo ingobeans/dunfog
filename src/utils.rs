@@ -68,7 +68,7 @@ pub static DAMAGE_MATERIAL: LazyLock<Material> = LazyLock::new(|| {
         },
     )
     .unwrap();
-    m.set_uniform("color", Color::from_rgba(255, 0, 25, 159));
+    m.set_uniform("color", Color::from_rgba(255, 0, 25, 100));
     m
 });
 
