@@ -21,6 +21,7 @@ impl TileStatus {
         matches!(self, TileStatus::Unknown)
     }
 }
+#[derive(Clone)]
 pub struct Weapon {
     pub attack_range: std::ops::Range<usize>,
     pub base_damage: f32,
@@ -209,25 +210,28 @@ impl Player {
         {
             return Some(PlayerAction::GotoNextDungeon);
         }
+        // stop moving towards target if any key is pressed
+        if !self.moving_to.is_empty() && !get_keys_pressed().is_empty() {
+            self.moving_to = Vec::new();
+        }
         if let GameState::Idle = state
             && let Some((tile_x, tile_y)) = click
             && dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable()
             && !self.tile_status[tile_x + tile_y * TILES_HORIZONTAL].is_unknown()
         {
+            let delta = vec2(tile_x as f32 - self.x as f32, tile_y as f32 - self.y as f32);
+
             // if we click an enemy which is in range, attack it.
             if let Some(enemy) = dungeon
                 .enemies
                 .iter_mut()
                 .find(|f| (f.x, f.y) == (tile_x, tile_y))
+                && let Item::Weapon(weapon) = &self.inventory[0].unwrap_or(Item::Weapon(&MELEE))
+                && weapon.attack_range.contains(&((delta.length()) as usize))
             {
-                let delta = vec2(tile_x as f32 - self.x as f32, tile_y as f32 - self.y as f32);
-                if let Item::Weapon(weapon) = &self.inventory[0].unwrap_or(Item::Weapon(&MELEE))
-                    && weapon.attack_range.contains(&((delta.length()) as usize))
-                {
-                    enemy.health -= weapon.base_damage;
-                    enemy.was_attacked = true;
-                    return Some(PlayerAction::Attack(delta.normalize()));
-                }
+                enemy.health -= weapon.base_damage;
+                enemy.was_attacked = true;
+                return Some(PlayerAction::Attack(delta.normalize()));
             } else {
                 let goal = (tile_x, tile_y);
                 let result = dungeon.pathfind((self.x, self.y), goal);
@@ -286,16 +290,9 @@ impl Player {
                 self.x.saturating_add_signed(input.x as isize),
                 self.y.saturating_add_signed(input.y as isize),
             );
-            if let Some(enemy) = dungeon.enemies.iter_mut().find(|f| (f.x, f.y) == new) {
-                // attack enemy
-                if let Item::Weapon(weapon) = &self.inventory[0].unwrap_or(Item::Weapon(&MELEE))
-                    && weapon.attack_range.contains(&1)
-                {
-                    enemy.health -= weapon.base_damage;
-                    enemy.was_attacked = true;
-                    return Some(PlayerAction::Attack(input));
-                }
-            } else if dungeon.tiles[new.0 + new.1 * TILES_HORIZONTAL].is_walkable() {
+            if !dungeon.enemies.iter_mut().any(|f| (f.x, f.y) == new)
+                && dungeon.tiles[new.0 + new.1 * TILES_HORIZONTAL].is_walkable()
+            {
                 (self.x, self.y) = new;
                 self.get_visible_tiles(dungeon);
                 return Some(PlayerAction::MoveDirection(input));
@@ -304,7 +301,36 @@ impl Player {
         if is_key_pressed(KeyCode::H) {
             return Some(PlayerAction::Wait);
         }
+        if is_key_pressed(KeyCode::E) {
+            // try interact with current tile
+            let tile = &mut dungeon.tiles[self.x + self.y * TILES_HORIZONTAL];
+            return match tile {
+                Tile::Chest(sprite_x, sprite_y, _) => {
+                    let mut buffer = Tile::Detail(*sprite_x + 1.0, *sprite_y);
+                    std::mem::swap(&mut buffer, tile);
+                    if let Tile::Chest(_, _, loot) = buffer {
+                        let item = loot.get_item().clone();
+                        if let Some(slot) = self.get_free_slot() {
+                            self.inventory[slot] = Some(item);
+                        } else {
+                            dungeon.items.push((self.x, self.y, item));
+                        }
+                    }
 
+                    None
+                }
+                _ => None,
+            };
+        }
+
+        None
+    }
+    fn get_free_slot(&self) -> Option<usize> {
+        for (i, slot) in self.inventory.iter().enumerate().skip(2) {
+            if slot.is_none() {
+                return Some(i);
+            }
+        }
         None
     }
 }

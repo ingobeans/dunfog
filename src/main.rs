@@ -1,11 +1,12 @@
 use macroquad::{miniquad::window::screen_size, prelude::*, rand};
 use utils::*;
 
-use crate::{assets::Assets, dungeon::*, entities::*, ui::InventoryState};
+use crate::{assets::Assets, dungeon::*, entities::*, loot::LootTable, ui::InventoryState};
 
 mod assets;
 mod dungeon;
 mod entities;
+mod loot;
 mod ui;
 mod utils;
 
@@ -15,7 +16,8 @@ enum Tile {
     Wall,
     Path,
     Door,
-    Chest(f32, f32, Item),
+    Chest(f32, f32, &'static LootTable),
+    Detail(f32, f32),
 }
 
 impl Tile {
@@ -130,7 +132,7 @@ impl<'a> Dunfog<'a> {
 
         let delta_time = get_frame_time();
 
-        if is_key_pressed(KeyCode::E) || is_key_pressed(KeyCode::Escape) {
+        if is_key_pressed(KeyCode::F) || is_key_pressed(KeyCode::Escape) {
             self.inv_state.toggle();
         }
 

@@ -2,6 +2,7 @@ use crate::{
     Tile,
     dungeon::{Dungeon, DungeonFloor},
     entities::*,
+    loot::BUSH_LOOT,
     utils::*,
 };
 use macroquad::prelude::*;
@@ -22,7 +23,7 @@ pub const FIRST_FLOOR: DungeonFloor = DungeonFloor {
         // generate vein of bushes
         let i = get_random_walkable(&dungeon.tiles).0;
         for (x, y) in drunkards_walk(&dungeon, (i % TILES_HORIZONTAL, i / TILES_HORIZONTAL), 5) {
-            dungeon.tiles[x + y * TILES_HORIZONTAL] = Tile::Chest(3.0, 1.0, Item::Weapon(&DAGGER));
+            dungeon.tiles[x + y * TILES_HORIZONTAL] = Tile::Chest(3.0, 1.0, &BUSH_LOOT);
         }
     },
 };
@@ -46,6 +47,7 @@ fn get_tile(tile: &Tile) -> (f32, f32) {
         Tile::Wall => (0.0, 0.0),
         Tile::Door => (2.0, 1.0),
         Tile::Chest(tile_x, tile_y, _) => (*tile_x, *tile_y),
+        Tile::Detail(tile_x, tile_y) => (*tile_x, *tile_y),
     }
 }
 
