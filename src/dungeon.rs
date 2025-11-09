@@ -2,7 +2,7 @@ use macroquad::prelude::*;
 use std::iter::Map;
 
 use crate::Tile;
-use crate::entities;
+use crate::entities::*;
 use crate::utils::*;
 use floors::*;
 
@@ -10,8 +10,7 @@ mod floors;
 
 pub const DUNGEON_FLOORS: &[DungeonFloor] = &[FIRST_FLOOR, SECOND_FLOOR];
 
-type PerRoomFn =
-    &'static dyn Fn(usize, usize, usize, usize, &mut Vec<Tile>, &mut Vec<entities::Enemy>);
+type PerRoomFn = &'static dyn Fn(usize, usize, usize, usize, &mut Vec<Tile>, &mut Vec<Enemy>);
 
 type PostGenFn = &'static dyn Fn(&mut Dungeon);
 
@@ -25,8 +24,8 @@ pub struct DungeonFloor {
 pub struct Dungeon {
     pub tiles: Vec<Tile>,
     pub player_spawn: (usize, usize),
-    pub enemies: Vec<entities::Enemy>,
-    pub items: Vec<(usize, usize, entities::Item)>,
+    pub enemies: Vec<Enemy>,
+    pub items: Vec<(usize, usize, Item)>,
     pub dungeon_floor: &'static DungeonFloor,
 }
 impl Dungeon {
@@ -50,15 +49,15 @@ impl Dungeon {
                 }
                 [0, 255, 0, _] => {
                     tiles[index] = Tile::Floor;
-                    enemies.push(entities::Enemy::new(x, y, &entities::ZOMBIE));
+                    enemies.push(Enemy::new(x, y, &ZOMBIE));
                 }
                 [0, 0, 50, _] => {
                     tiles[index] = Tile::Floor;
-                    enemies.push(entities::Enemy::new(x, y, &entities::SPIDER));
+                    enemies.push(Enemy::new(x, y, &SPIDER));
                 }
                 [220, 220, 0, _] => {
                     tiles[index] = Tile::Floor;
-                    enemies.push(entities::Enemy::new(x, y, &entities::SKELETON));
+                    enemies.push(Enemy::new(x, y, &SKELETON));
                 }
 
                 _ => {}

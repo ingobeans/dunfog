@@ -1,7 +1,7 @@
 use crate::{
     Tile,
     dungeon::{Dungeon, DungeonFloor},
-    entities,
+    entities::*,
     utils::*,
 };
 use macroquad::prelude::*;
@@ -10,10 +10,10 @@ pub const FIRST_FLOOR: DungeonFloor = DungeonFloor {
     rooms_area: 5 * 5 * 5,
     get_sprite: &get_tile,
     per_room_fn: &|x: usize, y: usize, w: usize, h: usize, _, enemies| {
-        enemies.push(entities::Enemy::new(
+        enemies.push(Enemy::new(
             x + rand::gen_range(0, w),
             y + rand::gen_range(0, h),
-            &entities::ZOMBIE,
+            &ZOMBIE,
         ));
     },
     post_gen_fn: &|dungeon| {
@@ -22,15 +22,14 @@ pub const FIRST_FLOOR: DungeonFloor = DungeonFloor {
         // generate vein of bushes
         let i = get_random_walkable(&dungeon.tiles).0;
         for (x, y) in drunkards_walk(&dungeon, (i % TILES_HORIZONTAL, i / TILES_HORIZONTAL), 5) {
-            dungeon.tiles[x + y * TILES_HORIZONTAL] =
-                Tile::Chest(3.0, 1.0, entities::Item::Weapon(&entities::DAGGER));
+            dungeon.tiles[x + y * TILES_HORIZONTAL] = Tile::Chest(3.0, 1.0, Item::Weapon(&DAGGER));
         }
     },
 };
 pub const SECOND_FLOOR: DungeonFloor = DungeonFloor {
     per_room_fn: &|x: usize, y: usize, w: usize, h: usize, _, enemies| {
-        let ty = [&entities::ZOMBIE, &entities::SPIDER, &entities::SKELETON][rand::gen_range(0, 2)];
-        enemies.push(entities::Enemy::new(
+        let ty = [&ZOMBIE, &SPIDER, &SKELETON][rand::gen_range(0, 2)];
+        enemies.push(Enemy::new(
             x + rand::gen_range(0, w),
             y + rand::gen_range(0, h),
             ty,

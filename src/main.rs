@@ -1,7 +1,7 @@
 use macroquad::{miniquad::window::screen_size, prelude::*, rand};
 use utils::*;
 
-use crate::{assets::Assets, dungeon::*, entities::EnemyType, ui::InventoryState};
+use crate::{assets::Assets, dungeon::*, entities::*, ui::InventoryState};
 
 mod assets;
 mod dungeon;
@@ -15,7 +15,7 @@ enum Tile {
     Wall,
     Path,
     Door,
-    Chest(f32, f32, entities::Item),
+    Chest(f32, f32, Item),
 }
 
 impl Tile {
@@ -36,7 +36,7 @@ enum GameState {
 }
 
 struct Dunfog<'a> {
-    player: entities::Player,
+    player: Player,
     floor: usize,
     dungeon: Dungeon,
     assets: &'a Assets,
@@ -46,7 +46,7 @@ struct Dunfog<'a> {
 }
 impl<'a> Dunfog<'a> {
     fn new(assets: &'a Assets, dungeon: Dungeon) -> Self {
-        let mut player = entities::Player::default();
+        let mut player = Player::default();
         player.move_to(dungeon.player_spawn, &dungeon);
         player.center_camera((SCREEN_WIDTH, SCREEN_HEIGHT));
         let mut world_camera = create_camera(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -69,9 +69,9 @@ impl<'a> Dunfog<'a> {
         for enemy in buffer.iter_mut() {
             if enemy.awake {
                 let action = enemy.act(&self.dungeon, &mut self.player);
-                if let entities::EnemyAction::MoveTo(pos) = action {
+                if let EnemyAction::MoveTo(pos) = action {
                     if (self.player.x, self.player.y) == pos || enemy_positions.contains(&pos) {
-                        enemy.current_action = Some(entities::EnemyAction::Wait)
+                        enemy.current_action = Some(EnemyAction::Wait)
                     } else {
                         *enemy_positions
                             .iter_mut()
@@ -85,7 +85,7 @@ impl<'a> Dunfog<'a> {
                 }
             } else if matches!(
                 self.player.tile_status[enemy.x + enemy.y * TILES_HORIZONTAL],
-                entities::TileStatus::Known
+                TileStatus::Known
             ) {
                 enemy.awaken();
             }
@@ -197,11 +197,11 @@ impl<'a> Dunfog<'a> {
                 self.player
                     .update(&mut self.dungeon, delta_time, &self.state, click)
             {
-                if let entities::PlayerAction::GotoNextDungeon = action {
+                if let PlayerAction::GotoNextDungeon = action {
                     self.floor += 1;
                     self.dungeon = Dungeon::generate_dungeon(&DUNGEON_FLOORS[self.floor]);
                     self.player.tile_status =
-                        vec![entities::TileStatus::Unknown; TILES_HORIZONTAL * TILES_VERTICAL];
+                        vec![TileStatus::Unknown; TILES_HORIZONTAL * TILES_VERTICAL];
                     self.player
                         .move_to(self.dungeon.player_spawn, &self.dungeon);
                     self.player.center_camera((
@@ -237,13 +237,13 @@ impl<'a> Dunfog<'a> {
 
             if self.dungeon.tiles[index].is_walkable() {
                 match tile_status {
-                    entities::TileStatus::Unknown => draw_texture(
+                    TileStatus::Unknown => draw_texture(
                         &self.assets.darkness,
                         x as f32 * 8.0 - 3.0,
                         y as f32 * 8.0 - 3.0,
                         WHITE,
                     ),
-                    entities::TileStatus::Remembered => draw_texture(
+                    TileStatus::Remembered => draw_texture(
                         &self.assets.semi_darkness,
                         x as f32 * 8.0 - 3.0,
                         y as f32 * 8.0 - 3.0,
@@ -257,14 +257,13 @@ impl<'a> Dunfog<'a> {
         let time = get_time();
         self.dungeon.enemies.retain(|f| f.health > 0.0);
         for enemy in self.dungeon.enemies.iter() {
-            if let entities::TileStatus::Known =
-                self.player.tile_status[enemy.x + enemy.y * TILES_HORIZONTAL]
+            if let TileStatus::Known = self.player.tile_status[enemy.x + enemy.y * TILES_HORIZONTAL]
             {
                 enemy.draw(self.assets, time);
             }
         }
         for (x, y, item) in self.dungeon.items.iter() {
-            if let entities::TileStatus::Known = self.player.tile_status[x + y * TILES_HORIZONTAL] {
+            if let TileStatus::Known = self.player.tile_status[x + y * TILES_HORIZONTAL] {
                 let sprite = item.get_sprite();
                 self.assets.items.draw_tile(
                     (x * 8) as f32,
