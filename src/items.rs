@@ -31,6 +31,14 @@ pub static ITEM_COMBINATIONS: &[([Item; 2], Item)] = &[
         [Item::Misc(&POISON_MUSHROOM), Item::Misc(&STONE)],
         Item::Misc(&POISON_ROCK),
     ),
+    (
+        [Item::Misc(&STONE), Item::Misc(&STONE)],
+        Item::Misc(&AXE_BLADE),
+    ),
+    (
+        [Item::Misc(&AXE_BLADE), Item::Misc(&STICK)],
+        Item::Weapon(&STONE_AXE),
+    ),
 ];
 
 pub fn combine(a: Item, b: Item) -> Item {
@@ -161,6 +169,15 @@ pub const STONE_SPEAR: Weapon = Weapon {
     name: "stone spear",
     throwable: Some((6.0, vec2(1.0, 0.0))),
 };
+pub const STONE_AXE: Weapon = Weapon {
+    attack_range: 1..2,
+    sprite_x: 8.0,
+    sprite_y: 0.0,
+    base_damage: 5.0,
+    fires_particle: None,
+    name: "stone axe",
+    throwable: Some((2.0, vec2(6.0, 0.0))),
+};
 pub const BONE_SPEAR: Weapon = Weapon {
     sprite_x: 5.0,
     name: "bone spear",
@@ -223,6 +240,14 @@ pub const STONE: MiscItem = MiscItem {
     name: "stone",
     desc: "a small stone",
     throwable: Some((3.0, vec2(2.0, 0.0))),
+    consumable: None,
+};
+pub const AXE_BLADE: MiscItem = MiscItem {
+    sprite_x: 10.0,
+    sprite_y: 2.0,
+    name: "axe blade",
+    desc: "a stone axe blade",
+    throwable: Some((5.0, vec2(5.0, 0.0))),
     consumable: None,
 };
 pub const FLESH: MiscItem = MiscItem {
