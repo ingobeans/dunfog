@@ -15,6 +15,10 @@ pub static ITEM_COMBINATIONS: &[([Item; 2], Item)] = &[
         [Item::Misc(&LEAF), Item::Misc(&FLESH)],
         Item::Misc(&RATIONS),
     ),
+    (
+        [Item::Misc(&BONE), Item::Misc(&STONE)],
+        Item::Weapon(&BONE_SPEAR),
+    ),
 ];
 
 pub fn combine(a: Item, b: Item) -> Item {
@@ -135,6 +139,12 @@ pub const STONE_SPEAR: Weapon = Weapon {
     fires_particle: None,
     name: "stone spear",
     throwable: Some((5.0, vec2(1.0, 0.0))),
+};
+pub const BONE_SPEAR: Weapon = Weapon {
+    sprite_x: 5.0,
+    name: "bone spear",
+    throwable: Some((5.0, vec2(1.0, 1.0))),
+    ..STONE_SPEAR
 };
 pub const IRON_ARMOR: Armor = Armor {
     block_chance: 0.4,

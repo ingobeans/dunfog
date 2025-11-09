@@ -50,7 +50,7 @@ pub const FIRST_FLOOR: DungeonFloor = DungeonFloor {
 };
 pub const SECOND_FLOOR: DungeonFloor = DungeonFloor {
     per_room_fn: &|x: usize, y: usize, w: usize, h: usize, _, enemies| {
-        let ty = [&ZOMBIE, &SPIDER, &SKELETON][rand::gen_range(0, 2)];
+        let ty = [&ZOMBIE, &SPIDER, &SKELETON][rand::gen_range(0, 3)];
         enemies.push(Enemy::new(
             x + rand::gen_range(0, w),
             y + rand::gen_range(0, h),
@@ -67,6 +67,32 @@ pub const SECOND_FLOOR: DungeonFloor = DungeonFloor {
             let (x, y) = (index % TILES_HORIZONTAL, index / TILES_HORIZONTAL);
             if !dungeon.enemies.iter().any(|f| (f.x, f.y) == (x, y)) {
                 dungeon.enemies.push(Enemy::new(x, y, &BAT));
+            }
+        }
+    },
+    ..FIRST_FLOOR
+};
+pub const THIRD_FLOOR: DungeonFloor = DungeonFloor {
+    per_room_fn: &|x: usize, y: usize, w: usize, h: usize, _, enemies| {
+        for _ in 0..rand::gen_range(0, 3) {
+            let ty = [&SLIME, &ZOMBIE][rand::gen_range(0, 2)];
+            enemies.push(Enemy::new(
+                x + rand::gen_range(0, w),
+                y + rand::gen_range(0, h),
+                ty,
+            ));
+        }
+    },
+    post_gen_fn: &|dungeon| {
+        (FIRST_FLOOR.post_gen_fn)(dungeon);
+        let mut walkables = get_walkables(&dungeon.tiles);
+        let amt = rand::gen_range(0, 3);
+        for _ in 0..amt {
+            let rng = rand::gen_range(0, walkables.len());
+            let (index, _) = walkables.remove(rng);
+            let (x, y) = (index % TILES_HORIZONTAL, index / TILES_HORIZONTAL);
+            if !dungeon.enemies.iter().any(|f| (f.x, f.y) == (x, y)) {
+                dungeon.enemies.push(Enemy::new(x, y, &SPIDER));
             }
         }
     },

@@ -11,7 +11,7 @@ use floors::*;
 
 mod floors;
 
-pub const DUNGEON_FLOORS: &[DungeonFloor] = &[FIRST_FLOOR, SECOND_FLOOR];
+pub const DUNGEON_FLOORS: &[DungeonFloor] = &[FIRST_FLOOR, SECOND_FLOOR, THIRD_FLOOR];
 
 type PerRoomFn = &'static dyn Fn(usize, usize, usize, usize, &mut Vec<Tile>, &mut Vec<Enemy>);
 

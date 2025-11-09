@@ -74,7 +74,7 @@ impl Player {
             self.health = (self.health + heal).min(MAX_PLAYER_HP);
 
             if let Some(status) = status {
-                if let Some(e) = self.status_effects.get_mut(status) {
+                if let Some(e) = self.status_effects.get_mut(&status) {
                     *e += 3;
                 } else {
                     self.status_effects.insert(*status, 3);
