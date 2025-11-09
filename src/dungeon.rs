@@ -3,6 +3,7 @@ use std::iter::Map;
 
 use crate::Tile;
 use crate::entities::*;
+use crate::particles::Particle;
 use crate::utils::*;
 use floors::*;
 
@@ -25,6 +26,7 @@ pub struct Dungeon {
     pub tiles: Vec<Tile>,
     pub player_spawn: (usize, usize),
     pub enemies: Vec<Enemy>,
+    pub particles: Vec<Box<dyn Particle>>,
     pub items: Vec<(usize, usize, Item)>,
     pub dungeon_floor: &'static DungeonFloor,
 }
@@ -69,6 +71,7 @@ impl Dungeon {
             enemies,
             items,
             dungeon_floor: &FIRST_FLOOR,
+            particles: Vec::new(),
         }
     }
     pub fn generate_dungeon(dungeon_floor: &'static DungeonFloor) -> Self {
@@ -158,6 +161,7 @@ impl Dungeon {
             enemies,
             items,
             dungeon_floor,
+            particles: Vec::new(),
         };
         (dungeon_floor.post_gen_fn)(&mut dungeon);
         dungeon

@@ -7,6 +7,7 @@ mod assets;
 mod dungeon;
 mod entities;
 mod loot;
+mod particles;
 mod ui;
 mod utils;
 
@@ -32,6 +33,16 @@ enum GameState {
     PlayerAction(f32),
     Waiting(f32),
     EnemyAction(f32),
+}
+impl GameState {
+    fn get_time(&self) -> f32 {
+        match self {
+            GameState::Idle => 0.0,
+            GameState::PlayerAction(time) => (ACTION_TIME - *time) / ACTION_TIME,
+            GameState::Waiting(time) => (ACTION_TIME - *time) / ACTION_TIME,
+            GameState::EnemyAction(time) => (ACTION_TIME - *time) / ACTION_TIME,
+        }
+    }
 }
 
 struct Dunfog<'a> {
@@ -67,7 +78,7 @@ impl<'a> Dunfog<'a> {
         let mut enemy_positions: Vec<(usize, usize)> = buffer.iter().map(|f| (f.x, f.y)).collect();
         for enemy in buffer.iter_mut() {
             if enemy.awake {
-                let action = enemy.act(&self.dungeon, &mut self.player);
+                let action = enemy.act(&mut self.dungeon, &mut self.player);
                 if let EnemyAction::MoveTo(pos) = action {
                     if (self.player.x, self.player.y) == pos || enemy_positions.contains(&pos) {
                         enemy.current_action = Some(EnemyAction::Wait)
@@ -99,6 +110,7 @@ impl<'a> Dunfog<'a> {
                 if *t <= 0.0 {
                     let enemies_visible =
                         !self.player.get_visible_enemies(&self.dungeon).is_empty();
+                    self.dungeon.particles.clear();
                     self.perform_enemy_actions();
                     if enemies_visible {
                         self.state = GameState::EnemyAction(ACTION_TIME);
@@ -117,6 +129,7 @@ impl<'a> Dunfog<'a> {
                 *t -= delta_time;
                 if *t <= 0.0 {
                     self.state = GameState::Idle;
+                    self.dungeon.particles.clear();
                 }
             }
         }
@@ -274,6 +287,9 @@ impl<'a> Dunfog<'a> {
             }
         }
         self.player.draw(self.assets, time);
+        for particle in self.dungeon.particles.iter_mut() {
+            particle.draw(self.state.get_time(), self.assets);
+        }
 
         if matches!(self.inv_state, InventoryState::Closed)
             && let Some((tile_x, tile_y)) = cursor_tile

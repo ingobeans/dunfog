@@ -5,6 +5,7 @@ use macroquad::prelude::*;
 pub struct Assets {
     pub tileset: Spritesheet,
     pub items: Spritesheet,
+    pub particles: Spritesheet,
     pub inventory: Texture2D,
     pub darkness: Texture2D,
     pub semi_darkness: Texture2D,
@@ -22,6 +23,10 @@ impl Default for Assets {
             ),
             items: Spritesheet::new(
                 load_ase_texture(include_bytes!("../assets/items.ase"), None),
+                8.0,
+            ),
+            particles: Spritesheet::new(
+                load_ase_texture(include_bytes!("../assets/particles.ase"), None),
                 8.0,
             ),
             inventory: load_ase_texture(include_bytes!("../assets/inventory.ase"), None),
@@ -62,7 +67,6 @@ impl Spritesheet {
             sprite_size,
         }
     }
-    #[expect(dead_code)]
     /// Same as `draw_tile`, except centered
     pub fn draw_sprite(
         &self,

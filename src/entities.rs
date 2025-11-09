@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use crate::{GameState, Tile, assets, dungeon::Dungeon, utils::*};
+use crate::{GameState, Tile, assets, dungeon::Dungeon, particles::ProjectileParticle, utils::*};
 use macroquad::prelude::*;
 
 pub enum PlayerAction {
@@ -39,6 +39,7 @@ pub struct Weapon {
     pub sprite_x: f32,
     pub sprite_y: f32,
     pub name: &'static str,
+    pub fires_particle: Option<(f32, f32)>,
 }
 impl Weapon {
     fn get_desc(&self) -> String {
@@ -55,6 +56,7 @@ pub const MELEE: Weapon = Weapon {
     sprite_x: 0.0,
     sprite_y: 0.0,
     name: "melee",
+    fires_particle: None,
 };
 pub const DAGGER: Weapon = Weapon {
     attack_range: 1..2,
@@ -62,6 +64,7 @@ pub const DAGGER: Weapon = Weapon {
     sprite_x: 1.0,
     sprite_y: 0.0,
     name: "dagger",
+    fires_particle: None,
 };
 pub const BOW: Weapon = Weapon {
     attack_range: 2..4,
@@ -69,6 +72,7 @@ pub const BOW: Weapon = Weapon {
     sprite_x: 2.0,
     sprite_y: 0.0,
     name: "bow",
+    fires_particle: Some((0.0, 0.0)),
 };
 pub const IRON_ARMOR: Armor = Armor {
     block_chance: 0.4,
@@ -262,6 +266,14 @@ impl Player {
             {
                 enemy.health -= weapon.base_damage;
                 enemy.was_attacked = true;
+                if let Some(particle) = weapon.fires_particle {
+                    dungeon.particles.push(Box::new(ProjectileParticle {
+                        sprite_x: particle.0,
+                        sprite_y: particle.1,
+                        origin: self.draw_pos + 4.0,
+                        dest: vec2(tile_x as f32 * 8.0 + 4.0, tile_y as f32 * 8.0 + 4.0),
+                    }));
+                }
                 return Some(PlayerAction::Attack(delta.normalize()));
             } else {
                 let goal = (tile_x, tile_y);
@@ -476,7 +488,7 @@ impl Enemy {
             self.reset_draw_pos();
         }
     }
-    pub fn act(&mut self, dungeon: &Dungeon, player: &mut Player) -> EnemyAction {
+    pub fn act(&mut self, dungeon: &mut Dungeon, player: &mut Player) -> EnemyAction {
         if self.just_awoke {
             self.just_awoke = false;
         }
@@ -495,6 +507,15 @@ impl Enemy {
         {
             player.health -= self.ty.weapon.base_damage;
             player.was_damaged = true;
+
+            if let Some(particle) = self.ty.weapon.fires_particle {
+                dungeon.particles.push(Box::new(ProjectileParticle {
+                    sprite_x: particle.0,
+                    sprite_y: particle.1,
+                    origin: self.draw_pos + 4.0,
+                    dest: vec2(player.x as f32 * 8.0 + 4.0, player.y as f32 * 8.0 + 4.0),
+                }));
+            }
             return EnemyAction::Attack(delta.normalize());
         }
         let should_pathfind = match &self.ty.movement_type {
