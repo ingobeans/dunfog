@@ -168,7 +168,9 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                     (player.inventory[*index], player.inventory[i]);
                 action = &mut none_action;
                 *state = InventoryState::Inventory(InventoryAction::None);
-            } else if let InventoryAction::None = &action {
+            } else if let InventoryAction::None = &action
+                && player.inventory[i].is_some()
+            {
                 action = &mut none_action;
                 *state = InventoryState::Inventory(InventoryAction::CtxMenuOpen(
                     i,
@@ -311,7 +313,9 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                 // todo: add these
                 ("Combine", &|_| true, &|_, _| {}),
                 ("Throw", &|_| true, &|_, _| {}),
-                ("Trash", &|_| true, &|_, _| {}),
+                ("Trash", &|_| true, &|_, player| {
+                    player.inventory[item_index] = None;
+                }),
             ];
             let mut any_clicked = false;
             for (index, (mut text, cond, on_click)) in buttons.into_iter().enumerate() {
