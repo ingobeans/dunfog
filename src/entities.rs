@@ -527,7 +527,7 @@ impl Enemy {
     }
     pub fn damage(&mut self, amt: f32) -> bool {
         let rng = rand::gen_range(0.0, 1.0);
-        if self.ty.block_chance < rng {
+        if !self.awake || self.ty.block_chance < rng {
             self.was_damaged = true;
             self.health -= amt;
             true

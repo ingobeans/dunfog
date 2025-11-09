@@ -105,7 +105,13 @@ impl<'a> Dunfog<'a> {
                 self.player.tile_status[enemy.x + enemy.y * TILES_HORIZONTAL],
                 TileStatus::Known
             ) {
-                enemy.awaken();
+                if rand::gen_range(
+                    0,
+                    (enemy.x.abs_diff(self.player.x) + enemy.y.abs_diff(self.player.y)).min(14),
+                ) <= 2
+                {
+                    enemy.awaken();
+                }
             }
         }
         std::mem::swap(&mut buffer, &mut self.dungeon.enemies);
