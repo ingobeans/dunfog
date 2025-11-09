@@ -255,26 +255,36 @@ impl Player {
             && !self.tile_status[tile_x + tile_y * TILES_HORIZONTAL].is_unknown()
         {
             let delta = vec2(tile_x as f32 - self.x as f32, tile_y as f32 - self.y as f32);
+            let Item::Weapon(weapon) = &self.inventory[0].unwrap_or(Item::Weapon(&MELEE)) else {
+                panic!("non weapon-type item in weapon slot")
+            };
+            let weapon_in_range =
+                ((delta.length()) as usize) <= weapon.attack_range.clone().max().unwrap();
 
             // if we click an enemy which is in range, attack it.
             if let Some(enemy) = dungeon
                 .enemies
                 .iter_mut()
                 .find(|f| (f.x, f.y) == (tile_x, tile_y))
-                && let Item::Weapon(weapon) = &self.inventory[0].unwrap_or(Item::Weapon(&MELEE))
-                && ((delta.length()) as usize) <= weapon.attack_range.clone().max().unwrap()
+                && (weapon_in_range
+                    || matches!(
+                        self.tile_status[tile_x + tile_y * TILES_HORIZONTAL],
+                        TileStatus::Known
+                    ))
             {
-                enemy.health -= weapon.base_damage;
-                enemy.was_attacked = true;
-                if let Some(particle) = weapon.fires_particle {
-                    dungeon.particles.push(Box::new(ProjectileParticle {
-                        sprite_x: particle.0,
-                        sprite_y: particle.1,
-                        origin: self.draw_pos + 4.0,
-                        dest: vec2(tile_x as f32 * 8.0 + 4.0, tile_y as f32 * 8.0 + 4.0),
-                    }));
+                if weapon_in_range {
+                    enemy.health -= weapon.base_damage;
+                    enemy.was_attacked = true;
+                    if let Some(particle) = weapon.fires_particle {
+                        dungeon.particles.push(Box::new(ProjectileParticle {
+                            sprite_x: particle.0,
+                            sprite_y: particle.1,
+                            origin: self.draw_pos + 4.0,
+                            dest: vec2(tile_x as f32 * 8.0 + 4.0, tile_y as f32 * 8.0 + 4.0),
+                        }));
+                    }
+                    return Some(PlayerAction::Attack(delta.normalize()));
                 }
-                return Some(PlayerAction::Attack(delta.normalize()));
             } else {
                 let goal = (tile_x, tile_y);
                 let result = dungeon.pathfind((self.x, self.y), goal);
