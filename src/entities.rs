@@ -202,11 +202,6 @@ impl Player {
         state: &GameState,
         click: Option<(usize, usize)>,
     ) -> Option<PlayerAction> {
-        if let Tile::Door = dungeon.tiles[self.x + self.y * TILES_HORIZONTAL]
-            && let GameState::Idle = state
-        {
-            return Some(PlayerAction::GotoNextDungeon);
-        }
         // stop moving towards target if any key is pressed
         if !self.moving_to.is_empty() && !get_keys_pressed().is_empty() {
             self.moving_to = Vec::new();
@@ -316,6 +311,7 @@ impl Player {
 
                     None
                 }
+                Tile::Door => Some(PlayerAction::GotoNextDungeon),
                 _ => None,
             };
         }
