@@ -1,4 +1,4 @@
-use std::{f32::consts::PI, sync::LazyLock};
+use std::{collections::HashMap, f32::consts::PI, sync::LazyLock};
 
 use crate::{
     GameState, Tile, assets, dungeon::Dungeon, items::*, loot::*, particles::ProjectileParticle,
@@ -38,6 +38,7 @@ pub struct Player {
     pub should_throw_item: Option<(usize, Vec2)>,
     pub should_drop_item: Option<usize>,
     pub enemies_slayed: u32,
+    pub status_effects: HashMap<StatusEffect, u16>,
 }
 impl Default for Player {
     fn default() -> Self {
@@ -61,15 +62,24 @@ impl Default for Player {
             should_throw_item: None,
             should_drop_item: None,
             enemies_slayed: 0,
+            status_effects: HashMap::new(),
         }
     }
 }
 impl Player {
     pub fn consume(&mut self, index: usize) {
         if let Some(Item::Misc(item)) = self.inventory[index].take()
-            && let Some((heal, _effect)) = &item.consumable
+            && let Some((heal, status)) = &item.consumable
         {
             self.health = (self.health + heal).min(MAX_PLAYER_HP);
+
+            if let Some(status) = status {
+                if let Some(e) = self.status_effects.get_mut(status) {
+                    *e += 3;
+                } else {
+                    self.status_effects.insert(*status, 3);
+                }
+            }
         } else {
             panic!("invalid consumable");
         }
@@ -191,6 +201,15 @@ impl Player {
             let mut current = self_pos;
             let max_step = 0.15;
             let throwable = item.throwable().unwrap();
+            let status_effect = if let Item::Misc(misc) = item {
+                if let Some(consumable) = &misc.consumable {
+                    consumable.1.clone()
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
             loop {
                 current += delta_normalized * max_step;
 
@@ -202,7 +221,7 @@ impl Player {
                     break;
                 }
                 if let Some(enemy) = dungeon.enemies.iter_mut().find(|f| f.x == tx && f.y == ty) {
-                    if !enemy.damage(throwable.0) {
+                    if !enemy.damage_throwing(throwable.0, status_effect) {
                         dungeon.items.push((tx, ty, item));
                     }
                     break;
@@ -473,6 +492,7 @@ pub struct Enemy {
     pub was_damaged: bool,
     pub health: f32,
     pub current_action: Option<EnemyAction>,
+    pub status_effects: HashMap<StatusEffect, u16>,
     #[allow(dead_code)]
     last_pathfind_target: Option<Vec2>,
 }
@@ -490,7 +510,22 @@ impl Enemy {
             health: ty.max_health,
             current_action: None,
             last_pathfind_target: None,
+            status_effects: HashMap::new(),
         }
+    }
+    pub fn damage_throwing(&mut self, amt: f32, status: Option<StatusEffect>) -> bool {
+        let mut hits = true;
+        if amt > 0.0 {
+            hits = self.damage(amt);
+        }
+        if hits && let Some(status) = status {
+            if let Some(e) = self.status_effects.get_mut(&status) {
+                *e += 3;
+            } else {
+                self.status_effects.insert(status, 3);
+            }
+        }
+        hits
     }
     pub fn reset_draw_pos(&mut self) {
         self.draw_pos = vec2((self.x * 8) as f32, (self.y * 8) as f32);
@@ -546,6 +581,15 @@ impl Enemy {
             player.x as f32 - self.x as f32,
             player.y as f32 - self.y as f32,
         );
+        for (k, v) in self.status_effects.iter_mut() {
+            if let StatusEffect::Poison = k {
+                self.health -= 2.0;
+                self.was_damaged = true;
+            }
+
+            *v -= 1;
+        }
+        self.status_effects.retain(|_, v| *v > 0);
         if self
             .ty
             .weapon

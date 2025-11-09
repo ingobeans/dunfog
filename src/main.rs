@@ -1,7 +1,10 @@
 use macroquad::{miniquad::window::screen_size, prelude::*, rand};
 use utils::*;
 
-use crate::{assets::Assets, dungeon::*, entities::*, loot::LootTable, ui::InventoryState};
+use crate::{
+    assets::Assets, dungeon::*, entities::*, items::StatusEffect, loot::LootTable,
+    ui::InventoryState,
+};
 
 mod assets;
 mod dungeon;
@@ -125,6 +128,17 @@ impl<'a> Dunfog<'a> {
                     let enemies_visible =
                         !self.player.get_visible_enemies(&self.dungeon).is_empty();
                     self.dungeon.particles.clear();
+
+                    for (k, v) in self.player.status_effects.iter_mut() {
+                        if let StatusEffect::Poison = k {
+                            self.player.health -= 2.0;
+                            self.player.was_damaged = true;
+                        }
+
+                        *v -= 1;
+                    }
+                    self.player.status_effects.retain(|_, v| *v > 0);
+
                     self.perform_enemy_actions();
                     if enemies_visible {
                         self.state = GameState::EnemyAction(ACTION_TIME);

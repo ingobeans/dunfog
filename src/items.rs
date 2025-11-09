@@ -135,8 +135,10 @@ pub const TUNIC: Armor = Armor {
     sprite_y: 1.0,
     name: "leather tunic",
 };
-#[derive(Clone, PartialEq)]
-pub enum StatusEffect {}
+#[derive(Clone, Copy, PartialEq, Hash, Eq)]
+pub enum StatusEffect {
+    Poison,
+}
 #[derive(Clone, PartialEq)]
 pub struct MiscItem {
     sprite_x: f32,
@@ -200,7 +202,7 @@ pub const POISON_MUSHROOM: MiscItem = MiscItem {
     name: "poisonous mushroom",
     desc: "maybe throw on your foes?",
     throwable: Some((0.0, vec2(4.0, 0.0))),
-    consumable: Some((0.0, None)),
+    consumable: Some((0.0, Some(StatusEffect::Poison))),
 };
 #[derive(Clone, Copy, PartialEq)]
 pub enum Item {
