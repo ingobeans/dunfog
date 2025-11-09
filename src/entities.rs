@@ -30,25 +30,29 @@ pub struct Weapon {
 }
 impl Weapon {
     fn get_desc(&self) -> String {
-        format!("DMG: {}\nRANGE: {:?}", self.base_damage, self.attack_range)
+        format!(
+            "DMG: {}\nRANGE: {}",
+            self.base_damage,
+            serialize_range(&self.attack_range)
+        )
     }
 }
 pub const MELEE: Weapon = Weapon {
-    attack_range: 0..1,
+    attack_range: 1..2,
     base_damage: 1.0,
     sprite_x: 0.0,
     sprite_y: 0.0,
     name: "melee",
 };
 pub const DAGGER: Weapon = Weapon {
-    attack_range: 0..1,
+    attack_range: 1..2,
     base_damage: 2.0,
     sprite_x: 1.0,
     sprite_y: 0.0,
     name: "dagger",
 };
 pub const BOW: Weapon = Weapon {
-    attack_range: 1..3,
+    attack_range: 2..4,
     base_damage: 2.0,
     sprite_x: 2.0,
     sprite_y: 0.0,
@@ -218,9 +222,7 @@ impl Player {
             {
                 let delta = vec2(tile_x as f32 - self.x as f32, tile_y as f32 - self.y as f32);
                 if let Item::Weapon(weapon) = &self.inventory[0].unwrap_or(Item::Weapon(&MELEE))
-                    && weapon
-                        .attack_range
-                        .contains(&((delta.length() - 1.0) as usize))
+                    && weapon.attack_range.contains(&((delta.length()) as usize))
                 {
                     enemy.health -= weapon.base_damage;
                     enemy.was_attacked = true;
@@ -287,7 +289,7 @@ impl Player {
             if let Some(enemy) = dungeon.enemies.iter_mut().find(|f| (f.x, f.y) == new) {
                 // attack enemy
                 if let Item::Weapon(weapon) = &self.inventory[0].unwrap_or(Item::Weapon(&MELEE))
-                    && weapon.attack_range.contains(&0)
+                    && weapon.attack_range.contains(&1)
                 {
                     enemy.health -= weapon.base_damage;
                     enemy.was_attacked = true;
@@ -427,7 +429,7 @@ impl Enemy {
             .ty
             .weapon
             .attack_range
-            .contains(&((delta.length() - 1.0) as usize))
+            .contains(&((delta.length()) as usize))
         {
             player.health -= self.ty.weapon.base_damage;
             player.was_damaged = true;
@@ -450,8 +452,8 @@ impl Enemy {
             // usually it moves towards player, but if weapon min range is larger that the dist to player, move away
             let dist = delta.length();
 
-            let min_range = self.ty.weapon.attack_range.clone().min().unwrap_or(0) + 1;
-            let max_range = self.ty.weapon.attack_range.clone().max().unwrap_or(0) + 1;
+            let min_range = self.ty.weapon.attack_range.clone().min().unwrap_or(0);
+            let max_range = self.ty.weapon.attack_range.clone().max().unwrap_or(0);
 
             let mut target_radius = if dist < min_range as f32 {
                 min_range as f32

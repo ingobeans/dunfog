@@ -1,4 +1,4 @@
-use std::sync::LazyLock;
+use std::{ops::Range, sync::LazyLock};
 
 use macroquad::{
     miniquad::{BlendFactor, BlendState, BlendValue, Equation},
@@ -16,6 +16,21 @@ pub const TILES_VERTICAL: usize = SCREEN_HEIGHT as usize / 8;
 pub const ACTION_TIME: f32 = 0.15;
 pub const MAX_PLAYER_HP: f32 = 25.0;
 
+pub fn serialize_range(range: &Range<usize>) -> String {
+    let min = range.clone().min();
+    let max = range.clone().max();
+    if let Some(min) = min
+        && max.is_some_and(|f| f == min)
+    {
+        format!("={}", min)
+    } else if min.is_none_or(|f| f <= 1) {
+        format!("<{}", max.unwrap())
+    } else if max.is_none() {
+        format!(">{}", min.unwrap())
+    } else {
+        format!("{}..{}", min.unwrap(), max.unwrap())
+    }
+}
 pub fn create_camera(w: f32, h: f32) -> Camera2D {
     let rt = render_target(w as u32, h as u32);
     rt.texture.set_filter(FilterMode::Nearest);
@@ -109,3 +124,15 @@ void main() {
     uv = texcoord;
 }
 ";
+
+#[cfg(test)]
+mod tests {
+    use crate::utils::serialize_range;
+
+    #[test]
+    fn serialize_range_test() {
+        assert_eq!(serialize_range(&(1..5)).as_str(), "<4");
+        assert_eq!(serialize_range(&(2..7)).as_str(), "2..6");
+        assert_eq!(serialize_range(&(1..2)).as_str(), "=1");
+    }
+}
