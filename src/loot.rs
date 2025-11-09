@@ -36,8 +36,7 @@ fn weighted_choice(choices: &[(f32, LootEntry)]) -> &LootEntry {
     for entry in choices {
         total += entry.0;
     }
-    let r = rand::rand();
-    let r = r as f32 * total / u32::MAX as f32;
+    let r = rand::gen_range(0.0, total);
     let mut upto = 0.0;
     for (c, w) in choices {
         if upto + c >= r {

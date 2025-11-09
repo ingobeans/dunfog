@@ -65,6 +65,19 @@ impl Default for Player {
     }
 }
 impl Player {
+    pub fn damage(&mut self, amt: f32) {
+        let rng = rand::gen_range(0.0, 1.0);
+        if self.inventory[1].is_none_or(|f| {
+            if let Item::Armor(armor) = f {
+                armor.block_chance < rng
+            } else {
+                panic!()
+            }
+        }) {
+            self.was_damaged = true;
+            self.health -= amt;
+        }
+    }
     pub fn draw(&self, assets: &assets::Assets, _time_since_start: f64) {
         if self.was_damaged {
             gl_use_material(&DAMAGE_MATERIAL);
@@ -176,8 +189,7 @@ impl Player {
                 }
                 if let Some(enemy) = dungeon.enemies.iter_mut().find(|f| f.x == tx && f.y == ty) {
                     let throwable = item.throwable().unwrap();
-                    enemy.health -= throwable.0;
-                    enemy.was_attacked = true;
+                    enemy.damage(throwable.0);
                     let dest = pos * 8.0 + 4.0;
                     dungeon.particles.push(Box::new(ProjectileParticle {
                         sprite_x: throwable.1.x,
@@ -215,8 +227,7 @@ impl Player {
                     ))
             {
                 if weapon_in_range {
-                    enemy.health -= weapon.base_damage;
-                    enemy.was_attacked = true;
+                    enemy.damage(weapon.base_damage);
                     if let Some(particle) = weapon.fires_particle {
                         dungeon.particles.push(Box::new(ProjectileParticle {
                             sprite_x: particle.0,
@@ -349,6 +360,7 @@ pub enum MovementType {
 }
 
 pub struct EnemyType {
+    pub block_chance: f32,
     pub death_drops: Option<&'static LootTable>,
     pub sprite_x: f32,
     pub sprite_y: f32,
@@ -359,6 +371,7 @@ pub struct EnemyType {
 }
 
 pub static ZOMBIE: EnemyType = EnemyType {
+    block_chance: 0.1,
     death_drops: None,
     sprite_x: 0.0,
     sprite_y: 3.0,
@@ -368,6 +381,7 @@ pub static ZOMBIE: EnemyType = EnemyType {
     show_held_item: false,
 };
 pub static SKELETON: LazyLock<EnemyType> = LazyLock::new(|| EnemyType {
+    block_chance: 0.1,
     death_drops: Some(&SKELETON_DROPS),
     sprite_x: 0.0,
     sprite_y: 5.0,
@@ -377,6 +391,7 @@ pub static SKELETON: LazyLock<EnemyType> = LazyLock::new(|| EnemyType {
     show_held_item: false,
 });
 pub static SPIDER: EnemyType = EnemyType {
+    block_chance: 0.5,
     death_drops: None,
     sprite_x: 0.0,
     sprite_y: 4.0,
@@ -401,7 +416,7 @@ pub struct Enemy {
     pub ty: &'static EnemyType,
     pub awake: bool,
     pub just_awoke: bool,
-    pub was_attacked: bool,
+    pub was_damaged: bool,
     pub health: f32,
     pub current_action: Option<EnemyAction>,
     #[allow(dead_code)]
@@ -417,7 +432,7 @@ impl Enemy {
             ty,
             awake: false,
             just_awoke: false,
-            was_attacked: false,
+            was_damaged: false,
             health: ty.max_health,
             current_action: None,
             last_pathfind_target: None,
@@ -456,12 +471,19 @@ impl Enemy {
             self.reset_draw_pos();
         }
     }
+    pub fn damage(&mut self, amt: f32) {
+        let rng = rand::gen_range(0.0, 1.0);
+        if self.ty.block_chance < rng {
+            self.was_damaged = true;
+            self.health -= amt;
+        }
+    }
     pub fn act(&mut self, dungeon: &mut Dungeon, player: &mut Player) -> EnemyAction {
         if self.just_awoke {
             self.just_awoke = false;
         }
-        if self.was_attacked {
-            self.was_attacked = false;
+        if self.was_damaged {
+            self.was_damaged = false;
         }
         let delta = vec2(
             player.x as f32 - self.x as f32,
@@ -473,8 +495,7 @@ impl Enemy {
             .attack_range
             .contains(&((delta.length()) as usize))
         {
-            player.health -= self.ty.weapon.base_damage;
-            player.was_damaged = true;
+            player.damage(self.ty.weapon.base_damage);
 
             if let Some(particle) = self.ty.weapon.fires_particle {
                 dungeon.particles.push(Box::new(ProjectileParticle {
@@ -563,7 +584,7 @@ impl Enemy {
         EnemyAction::Wait
     }
     pub fn draw(&self, assets: &assets::Assets, time_since_start: f64) {
-        if self.was_attacked {
+        if self.was_damaged {
             gl_use_material(&DAMAGE_MATERIAL);
         }
         assets.tileset.draw_tile(
@@ -573,7 +594,7 @@ impl Enemy {
             self.ty.sprite_y,
             None,
         );
-        if self.was_attacked {
+        if self.was_damaged {
             gl_use_default_material();
         }
         if !self.awake || self.just_awoke {
