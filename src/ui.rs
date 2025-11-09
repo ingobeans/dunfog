@@ -211,6 +211,18 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                 }),
             );
         }
+        if let Some(Item::Armor(item)) = &player.inventory[1] {
+            assets.items.draw_tile(
+                x + player_portrait.x,
+                y + player_portrait.y,
+                item.sprite_x + 1.0,
+                item.sprite_y,
+                Some(&DrawTextureParams {
+                    dest_size: Some(vec2(16.0 * scale_factor, 16.0 * scale_factor)),
+                    ..Default::default()
+                }),
+            );
+        }
 
         for (i, slot) in player.inventory.iter().enumerate() {
             let (slot_x, slot_y) = slot_index_position(i);

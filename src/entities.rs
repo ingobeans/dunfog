@@ -176,9 +176,18 @@ impl Player {
         }
         if let Some(Item::Weapon(item)) = &self.inventory[0] {
             assets.items.draw_tile(
-                self.draw_pos.x - 4.0,
+                self.draw_pos.x - 5.0,
                 self.draw_pos.y - 2.0,
                 item.sprite_x,
+                item.sprite_y,
+                None,
+            );
+        }
+        if let Some(Item::Armor(item)) = &self.inventory[1] {
+            assets.items.draw_tile(
+                self.draw_pos.x,
+                self.draw_pos.y,
+                item.sprite_x + 1.0,
                 item.sprite_y,
                 None,
             );
