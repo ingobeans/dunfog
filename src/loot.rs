@@ -22,7 +22,7 @@ pub static SKELETON_DROPS: LazyLock<LootTable> = LazyLock::new(|| {
         entries: vec![
             (1.0, LootEntry::Item(Item::Misc(&STICK))),
             (1.0, LootEntry::Item(Item::Misc(&BONE))),
-            (0.1, LootEntry::Item(Item::Weapon(&BOW))),
+            (0.1, LootEntry::Item(Item::Weapon(&SHORTBOW))),
             (1.0, LootEntry::None),
         ],
     }
@@ -93,7 +93,7 @@ mod tests {
         rand::srand(seed);
         let data = &[
             (0.5, LootEntry::Item(Item::Weapon(&DAGGER))),
-            (0.5, LootEntry::Item(Item::Weapon(&BOW))),
+            (0.5, LootEntry::Item(Item::Weapon(&SHORTBOW))),
             (0.5, LootEntry::Item(Item::Weapon(&MELEE))),
         ];
         weighted_choice(data);

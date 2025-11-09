@@ -19,6 +19,18 @@ pub static ITEM_COMBINATIONS: &[([Item; 2], Item)] = &[
         [Item::Misc(&BONE), Item::Misc(&STONE)],
         Item::Weapon(&BONE_SPEAR),
     ),
+    (
+        [Item::Misc(&FIBER), Item::Misc(&STICK)],
+        Item::Weapon(&SHORTBOW),
+    ),
+    (
+        [Item::Weapon(&SHORTBOW), Item::Weapon(&SHORTBOW)],
+        Item::Weapon(&LONGBOW),
+    ),
+    (
+        [Item::Misc(&POISON_MUSHROOM), Item::Misc(&STONE)],
+        Item::Misc(&POISON_ROCK),
+    ),
 ];
 
 pub fn combine(a: Item, b: Item) -> Item {
@@ -106,19 +118,28 @@ pub const MELEE: Weapon = Weapon {
 };
 pub const DAGGER: Weapon = Weapon {
     attack_range: 1..2,
-    base_damage: 2.0,
+    base_damage: 2.5,
     sprite_x: 1.0,
     sprite_y: 0.0,
     name: "dagger",
     fires_particle: None,
     throwable: None,
 };
-pub const BOW: Weapon = Weapon {
+pub const SHORTBOW: Weapon = Weapon {
     attack_range: 2..4,
-    base_damage: 2.0,
+    base_damage: 1.0,
     sprite_x: 2.0,
     sprite_y: 0.0,
-    name: "bow",
+    name: "shortbow",
+    fires_particle: Some((0.0, 0.0)),
+    throwable: None,
+};
+pub const LONGBOW: Weapon = Weapon {
+    attack_range: 2..5,
+    base_damage: 2.0,
+    sprite_x: 6.0,
+    sprite_y: 0.0,
+    name: "longbow",
     fires_particle: Some((0.0, 0.0)),
     throwable: None,
 };
@@ -138,12 +159,12 @@ pub const STONE_SPEAR: Weapon = Weapon {
     base_damage: 2.0,
     fires_particle: None,
     name: "stone spear",
-    throwable: Some((5.0, vec2(1.0, 0.0))),
+    throwable: Some((6.0, vec2(1.0, 0.0))),
 };
 pub const BONE_SPEAR: Weapon = Weapon {
     sprite_x: 5.0,
     name: "bone spear",
-    throwable: Some((5.0, vec2(1.0, 1.0))),
+    throwable: Some((6.0, vec2(1.0, 1.0))),
     ..STONE_SPEAR
 };
 pub const IRON_ARMOR: Armor = Armor {
@@ -242,6 +263,14 @@ pub const POISON_MUSHROOM: MiscItem = MiscItem {
     name: "poisonous mushroom",
     desc: "maybe throw on your foes?",
     throwable: Some((0.0, vec2(4.0, 0.0))),
+    consumable: Some((0.0, Some(StatusEffect::Poison))),
+};
+pub const POISON_ROCK: MiscItem = MiscItem {
+    sprite_x: 8.0,
+    sprite_y: 2.0,
+    name: "poisonous rock",
+    desc: "even hurtyer rock!",
+    throwable: Some((3.0, vec2(4.0, 0.0))),
     consumable: Some((0.0, Some(StatusEffect::Poison))),
 };
 #[derive(Clone, Copy, PartialEq)]

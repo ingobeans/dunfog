@@ -420,7 +420,7 @@ pub static SKELETON: LazyLock<EnemyType> = LazyLock::new(|| EnemyType {
     sprite_y: 5.0,
     max_health: 10.0,
     movement_type: MovementType::AlwaysChase,
-    weapon: &BOW,
+    weapon: &SHORTBOW,
     show_held_item: false,
 });
 pub static SPIDER: EnemyType = EnemyType {
