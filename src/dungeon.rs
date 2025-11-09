@@ -35,7 +35,7 @@ impl Dungeon {
         let mut tiles = vec![Tile::Wall; TILES_HORIZONTAL * TILES_VERTICAL];
         let mut player_spawn = (0, 0);
         let mut enemies = Vec::new();
-        let mut items = Vec::new();
+        let items = Vec::new();
         for (index, pixel) in image.get_image_data().iter().enumerate() {
             let x = index % TILES_HORIZONTAL;
             let y = index / TILES_HORIZONTAL;

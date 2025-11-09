@@ -22,7 +22,7 @@ pub const FIRST_FLOOR: DungeonFloor = DungeonFloor {
 
         // generate vein of bushes
         let i = get_random_walkable(&dungeon.tiles).0;
-        for (x, y) in drunkards_walk(&dungeon, (i % TILES_HORIZONTAL, i / TILES_HORIZONTAL), 5) {
+        for (x, y) in drunkards_walk(dungeon, (i % TILES_HORIZONTAL, i / TILES_HORIZONTAL), 5) {
             dungeon.tiles[x + y * TILES_HORIZONTAL] = Tile::Chest(3.0, 1.0, &BUSH_LOOT);
         }
     },
@@ -53,7 +53,7 @@ fn get_tile(tile: &Tile) -> (f32, f32) {
 
 fn get_random_walkable<'a>(tiles: &'a [Tile]) -> (usize, &'a Tile) {
     let walkables: Vec<(usize, &'a Tile)> = tiles
-        .into_iter()
+        .iter()
         .enumerate()
         .filter_map(|(i, f)| {
             if matches!(f, Tile::Floor) {
@@ -90,16 +90,13 @@ fn drunkards_walk(
             candidates.push((x, y + 1));
         }
         // filter away non walkable tiles
-        candidates = candidates
-            .into_iter()
-            .filter(|(x, y)| {
+        candidates.retain(|(x, y)| {
                 dungeon.tiles[x + y * TILES_HORIZONTAL].is_walkable()
                     && !dungeon.enemies.iter().any(|f| (f.x, f.y) == (*x, *y))
                     && (*x, *y) != dungeon.player_spawn
                     && !walked.contains(&(*x, *y))
-            })
-            .collect();
-        if candidates.len() == 0 {
+            });
+        if candidates.is_empty() {
             break;
         }
         tiles -= 1;

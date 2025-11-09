@@ -13,6 +13,7 @@ pub static BUSH_LOOT: LazyLock<LootTable> = LazyLock::new(|| {
     }
 });
 
+#[expect(dead_code)]
 enum LootEntry {
     Item(Item),
     LootEntry(&'static LootTable),
@@ -26,7 +27,7 @@ fn weighted_choice(choices: &[(f32, LootEntry)]) -> &LootEntry {
     let r = rand::rand();
     let r = r as f32 * total / u32::MAX as f32;
     let mut upto = 0.0;
-    for (i, (c, w)) in choices.iter().enumerate() {
+    for (c, w) in choices {
         if upto + c >= r {
             return w;
         }
@@ -41,7 +42,6 @@ pub struct LootTable {
 }
 impl LootTable {
     pub fn get_item(&self) -> &Item {
-        let mut sum = 0.0;
         let result = weighted_choice(&self.entries);
         match result {
             LootEntry::Item(item) => item,

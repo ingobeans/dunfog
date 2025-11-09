@@ -22,10 +22,7 @@ enum Tile {
 
 impl Tile {
     fn is_walkable(self) -> bool {
-        match self {
-            Tile::Wall => false,
-            _ => true,
-        }
+        !matches!(self, Tile::Wall)
     }
 }
 
