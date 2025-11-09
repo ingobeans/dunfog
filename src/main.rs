@@ -143,7 +143,9 @@ impl<'a> Dunfog<'a> {
 
         let delta_time = get_frame_time();
 
-        if is_key_pressed(KeyCode::F) || is_key_pressed(KeyCode::Escape) {
+        if (is_key_pressed(KeyCode::F) || is_key_pressed(KeyCode::Escape))
+            && self.player.should_throw_item.is_none()
+        {
             self.inv_state.toggle();
         }
 
@@ -300,7 +302,7 @@ impl<'a> Dunfog<'a> {
             particle.draw(self.state.get_time(), self.assets);
         }
 
-        if matches!(self.inv_state, InventoryState::Closed)
+        if !matches!(self.inv_state, InventoryState::Inventory(_))
             && let Some((tile_x, tile_y)) = cursor_tile
             && self.dungeon.tiles[tile_x + tile_y * TILES_HORIZONTAL].is_walkable()
             && !self.player.tile_status[tile_x + tile_y * TILES_HORIZONTAL].is_unknown()

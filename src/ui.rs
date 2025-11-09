@@ -20,12 +20,14 @@ pub enum InventoryAction {
 pub enum InventoryState {
     Closed,
     Inventory(InventoryAction),
+    ThrowingItem(usize),
 }
 impl InventoryState {
     pub fn toggle(&mut self) {
         *self = match self {
             InventoryState::Closed => InventoryState::Inventory(InventoryAction::None),
             InventoryState::Inventory(_) => InventoryState::Closed,
+            InventoryState::ThrowingItem(_) => InventoryState::Closed,
         }
     }
 }
@@ -152,125 +154,149 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
         ((actual_screen_height - (assets.inventory.height() + 11.0) * scale_factor) / 2.0).floor();
 
     let mut none_action = InventoryAction::None;
-    if let InventoryState::Inventory(action) = state {
-        let mut action = action;
-        let hovered_index = player.inventory.iter().enumerate().position(|(i, _)| {
-            let (slot_x, slot_y) = slot_index_position(i);
+    match state {
+        InventoryState::Inventory(action) => {
+            let mut action = action;
+            let hovered_index = player.inventory.iter().enumerate().position(|(i, _)| {
+                let (slot_x, slot_y) = slot_index_position(i);
 
-            ((slot_x as f32 * scale_factor + x)
-                ..(slot_x as f32 * scale_factor + x + 12.0 * scale_factor))
-                .contains(&mouse_x)
-                && ((slot_y as f32 * scale_factor + y)
-                    ..(slot_y as f32 * scale_factor + y + 12.0 * scale_factor))
-                    .contains(&mouse_y)
-        });
-        if clicking && let Some(i) = hovered_index {
-            match &action {
-                InventoryAction::MovingItem(index) => {
-                    if item_can_go_in_slot(&player.inventory[i], *index)
-                        && item_can_go_in_slot(&player.inventory[*index], i)
-                    {
-                        (player.inventory[i], player.inventory[*index]) =
-                            (player.inventory[*index], player.inventory[i]);
-                        action = &mut none_action;
-                        *state = InventoryState::Inventory(InventoryAction::None);
+                ((slot_x as f32 * scale_factor + x)
+                    ..(slot_x as f32 * scale_factor + x + 12.0 * scale_factor))
+                    .contains(&mouse_x)
+                    && ((slot_y as f32 * scale_factor + y)
+                        ..(slot_y as f32 * scale_factor + y + 12.0 * scale_factor))
+                        .contains(&mouse_y)
+            });
+            if clicking && let Some(i) = hovered_index {
+                match &action {
+                    InventoryAction::MovingItem(index) => {
+                        if item_can_go_in_slot(&player.inventory[i], *index)
+                            && item_can_go_in_slot(&player.inventory[*index], i)
+                        {
+                            (player.inventory[i], player.inventory[*index]) =
+                                (player.inventory[*index], player.inventory[i]);
+                            action = &mut none_action;
+                            *state = InventoryState::Inventory(InventoryAction::None);
+                        }
                     }
-                }
-                InventoryAction::CombiningItem(index, combinables) => {
-                    if combinables.contains(&i) {
-                        let new = combine(
-                            player.inventory[*index].take().unwrap(),
-                            player.inventory[i].take().unwrap(),
-                        );
-                        player.inventory[i] = Some(new);
-                        action = &mut none_action;
-                        *state = InventoryState::Inventory(InventoryAction::None);
+                    InventoryAction::CombiningItem(index, combinables) => {
+                        if combinables.contains(&i) {
+                            let new = combine(
+                                player.inventory[*index].take().unwrap(),
+                                player.inventory[i].take().unwrap(),
+                            );
+                            player.inventory[i] = Some(new);
+                            action = &mut none_action;
+                            *state = InventoryState::Inventory(InventoryAction::None);
+                        }
                     }
-                }
-                InventoryAction::None => {
-                    if player.inventory[i].is_some() {
-                        action = &mut none_action;
-                        *state = InventoryState::Inventory(InventoryAction::CtxMenuOpen(
-                            i,
-                            mouse_x - assets.ctx_menu.width() * scale_factor + 2.0 * scale_factor,
-                            mouse_y - assets.ctx_menu.height() * scale_factor + 2.0 * scale_factor,
-                        ));
+                    InventoryAction::None => {
+                        if player.inventory[i].is_some() {
+                            action = &mut none_action;
+                            *state = InventoryState::Inventory(InventoryAction::CtxMenuOpen(
+                                i,
+                                mouse_x - assets.ctx_menu.width() * scale_factor
+                                    + 2.0 * scale_factor,
+                                mouse_y - assets.ctx_menu.height() * scale_factor
+                                    + 2.0 * scale_factor,
+                            ));
+                        }
                     }
+                    _ => {}
                 }
-                _ => {}
             }
-        }
 
-        draw_texture_ex(
-            &assets.inventory,
-            x,
-            y,
-            WHITE,
-            DrawTextureParams {
-                dest_size: Some(vec2(
-                    assets.inventory.width() * scale_factor,
-                    assets.inventory.height() * scale_factor,
-                )),
-                ..Default::default()
-            },
-        );
-        // draw player portrait
-        let player_portrait = vec2(13.0, 23.0) * scale_factor;
-        if let Some(Item::Weapon(item)) = &player.inventory[0] {
-            assets.items.draw_tile(
-                x + player_portrait.x - 4.0 * scale_factor * 2.0,
-                y + player_portrait.y - 2.0 * scale_factor * 2.0,
-                item.sprite_x,
-                item.sprite_y,
-                Some(&DrawTextureParams {
-                    dest_size: Some(vec2(16.0 * scale_factor, 16.0 * scale_factor)),
+            draw_texture_ex(
+                &assets.inventory,
+                x,
+                y,
+                WHITE,
+                DrawTextureParams {
+                    dest_size: Some(vec2(
+                        assets.inventory.width() * scale_factor,
+                        assets.inventory.height() * scale_factor,
+                    )),
                     ..Default::default()
-                }),
+                },
             );
-        }
-        if let Some(Item::Armor(item)) = &player.inventory[1] {
-            assets.items.draw_tile(
-                x + player_portrait.x,
-                y + player_portrait.y,
-                item.sprite_x + 1.0,
-                item.sprite_y,
-                Some(&DrawTextureParams {
-                    dest_size: Some(vec2(16.0 * scale_factor, 16.0 * scale_factor)),
-                    ..Default::default()
-                }),
-            );
-        }
-
-        for (i, slot) in player.inventory.iter().enumerate() {
-            let (slot_x, slot_y) = slot_index_position(i);
-            let hovered = hovered_index.is_some_and(|f| f == i);
-
-            let draw_x = slot_x as f32 * scale_factor + x + 2.0 * scale_factor;
-            let draw_y = slot_y as f32 * scale_factor + y + 2.0 * scale_factor;
-            if hovered || slot.is_some() || i >= 2 {
-                draw_rectangle(
-                    draw_x,
-                    draw_y,
-                    8.0 * scale_factor,
-                    8.0 * scale_factor,
-                    if !hovered { UI_BORDER } else { UI_BACKGROUND },
+            // draw player portrait
+            let player_portrait = vec2(13.0, 23.0) * scale_factor;
+            if let Some(Item::Weapon(item)) = &player.inventory[0] {
+                assets.items.draw_tile(
+                    x + player_portrait.x - 4.0 * scale_factor * 2.0,
+                    y + player_portrait.y - 2.0 * scale_factor * 2.0,
+                    item.sprite_x,
+                    item.sprite_y,
+                    Some(&DrawTextureParams {
+                        dest_size: Some(vec2(16.0 * scale_factor, 16.0 * scale_factor)),
+                        ..Default::default()
+                    }),
                 );
             }
-            if let InventoryAction::MovingItem(moving_index) = action
-                && i == *moving_index
-            {
-                continue;
+            if let Some(Item::Armor(item)) = &player.inventory[1] {
+                assets.items.draw_tile(
+                    x + player_portrait.x,
+                    y + player_portrait.y,
+                    item.sprite_x + 1.0,
+                    item.sprite_y,
+                    Some(&DrawTextureParams {
+                        dest_size: Some(vec2(16.0 * scale_factor, 16.0 * scale_factor)),
+                        ..Default::default()
+                    }),
+                );
             }
-            if let InventoryAction::CombiningItem(moving_index, _) = action
-                && i == *moving_index
-            {
-                continue;
+
+            for (i, slot) in player.inventory.iter().enumerate() {
+                let (slot_x, slot_y) = slot_index_position(i);
+                let hovered = hovered_index.is_some_and(|f| f == i);
+
+                let draw_x = slot_x as f32 * scale_factor + x + 2.0 * scale_factor;
+                let draw_y = slot_y as f32 * scale_factor + y + 2.0 * scale_factor;
+                if hovered || slot.is_some() || i >= 2 {
+                    draw_rectangle(
+                        draw_x,
+                        draw_y,
+                        8.0 * scale_factor,
+                        8.0 * scale_factor,
+                        if !hovered { UI_BORDER } else { UI_BACKGROUND },
+                    );
+                }
+                if let InventoryAction::MovingItem(moving_index) = action
+                    && i == *moving_index
+                {
+                    continue;
+                }
+                if let InventoryAction::CombiningItem(moving_index, _) = action
+                    && i == *moving_index
+                {
+                    continue;
+                }
+                if let Some(item) = slot {
+                    let sprite = item.get_sprite();
+                    assets.items.draw_tile(
+                        draw_x,
+                        draw_y,
+                        sprite.x,
+                        sprite.y,
+                        Some(&DrawTextureParams {
+                            dest_size: Some(vec2(8.0 * scale_factor, 8.0 * scale_factor)),
+                            ..Default::default()
+                        }),
+                    );
+                }
             }
-            if let Some(item) = slot {
+
+            let cursor_item = match &action {
+                InventoryAction::MovingItem(index) => Some(index),
+                InventoryAction::CombiningItem(index, _) => Some(index),
+                _ => None,
+            };
+            if let Some(cursor_item) = cursor_item {
+                let item = &player.inventory[*cursor_item].unwrap();
                 let sprite = item.get_sprite();
                 assets.items.draw_tile(
-                    draw_x,
-                    draw_y,
+                    mouse_x - 4.0 * scale_factor,
+                    mouse_y - 4.0 * scale_factor,
                     sprite.x,
                     sprite.y,
                     Some(&DrawTextureParams {
@@ -279,15 +305,132 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                     }),
                 );
             }
-        }
 
-        let cursor_item = match &action {
-            InventoryAction::MovingItem(index) => Some(index),
-            InventoryAction::CombiningItem(index, _) => Some(index),
-            _ => None,
-        };
-        if let Some(cursor_item) = cursor_item {
-            let item = &player.inventory[*cursor_item].unwrap();
+            if let Some(hover) = hovered_index
+                && let Some(item) = &player.inventory[hover]
+                && let InventoryAction::None = action
+            {
+                draw_item_hover_info(item, assets, mouse_x, mouse_y, scale_factor);
+            }
+            if let InventoryAction::CtxMenuOpen(item_index, mx, my) = action {
+                let w = assets.ctx_menu.width() * scale_factor;
+                let h = assets.ctx_menu.height() * scale_factor;
+                draw_texture_ex(
+                    &assets.ctx_menu,
+                    *mx,
+                    *my,
+                    WHITE,
+                    DrawTextureParams {
+                        dest_size: Some(vec2(w, h)),
+                        ..Default::default()
+                    },
+                );
+                let player_free_slot = player.get_free_slot();
+                let player_first_free = player.inventory[0].is_none();
+                let player_second_free = player.inventory[1].is_none();
+                let item_index = *item_index;
+
+                let combinable = get_combinable(&player.inventory, item_index);
+                let has_combinable = !combinable.is_empty();
+
+                let buttons: [CtxMenuButton; 5] = [
+                    ("Move", &|_| true, &|state, _| {
+                        *state = InventoryState::Inventory(InventoryAction::MovingItem(item_index))
+                    }),
+                    (
+                        "Equip",
+                        &|item| match item {
+                            Item::Weapon(_) => {
+                                if item_index == 0 {
+                                    player_free_slot.is_some()
+                                } else {
+                                    player_first_free
+                                }
+                            }
+                            Item::Armor(_) => {
+                                if item_index == 1 {
+                                    player_free_slot.is_some()
+                                } else {
+                                    player_second_free
+                                }
+                            }
+                            _ => false,
+                        },
+                        &|_, player| {
+                            let target_index = match player.inventory[item_index].unwrap() {
+                                Item::Weapon(_) => 0,
+                                Item::Armor(_) => 1,
+                                _ => panic!(),
+                            };
+                            if item_index == target_index {
+                                (
+                                    player.inventory[item_index],
+                                    player.inventory[player_free_slot.unwrap()],
+                                ) = (
+                                    player.inventory[player_free_slot.unwrap()],
+                                    player.inventory[item_index],
+                                );
+                            } else {
+                                (player.inventory[item_index], player.inventory[target_index]) =
+                                    (player.inventory[target_index], player.inventory[item_index]);
+                            }
+                        },
+                    ),
+                    // todo: add these
+                    ("Combine", &|_| has_combinable, &|state, _| {
+                        *state = InventoryState::Inventory(InventoryAction::CombiningItem(
+                            item_index,
+                            combinable.clone(),
+                        ));
+                    }),
+                    ("Throw", &|item| item.throwable().is_some(), &|state, _| {
+                        *state = InventoryState::ThrowingItem(item_index)
+                    }),
+                    ("Trash", &|_| true, &|_, player| {
+                        player.inventory[item_index] = None;
+                    }),
+                ];
+                let mut any_clicked = false;
+                for (index, (mut text, cond, on_click)) in buttons.into_iter().enumerate() {
+                    let x = *mx + 2.0 * scale_factor;
+                    let y = *my + index as f32 * 7.0 * scale_factor + 2.0 * scale_factor;
+                    let hovered = (x..(x + w)).contains(&mouse_x)
+                        && (y..(y + 7.0 * scale_factor)).contains(&mouse_y);
+
+                    let mut color = if hovered { GOLD } else { WHITE };
+                    let disabled = !cond(&player.inventory[item_index].unwrap());
+                    if disabled {
+                        color = GRAY;
+                    }
+                    if !disabled && text == "Equip" && item_index <= 1 {
+                        text = "Unequip";
+                    }
+
+                    draw_text_ex(
+                        text,
+                        x,
+                        y + 6.0 * scale_factor,
+                        TextParams {
+                            color,
+                            font: Some(&assets.font),
+                            font_size: (scale_factor * 6.0) as u16,
+                            ..Default::default()
+                        },
+                    );
+                    if !disabled && hovered && clicking {
+                        any_clicked = true;
+                        *state = InventoryState::Inventory(InventoryAction::None);
+                        on_click(state, player);
+                        break;
+                    }
+                }
+                if !any_clicked && clicking {
+                    *state = InventoryState::Inventory(InventoryAction::None);
+                }
+            }
+        }
+        InventoryState::ThrowingItem(index) => {
+            let item = &player.inventory[*index].unwrap();
             let sprite = item.get_sprite();
             assets.items.draw_tile(
                 mouse_x - 4.0 * scale_factor,
@@ -299,128 +442,20 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                     ..Default::default()
                 }),
             );
-        }
-
-        if let Some(hover) = hovered_index
-            && let Some(item) = &player.inventory[hover]
-            && let InventoryAction::None = action
-        {
-            draw_item_hover_info(item, assets, mouse_x, mouse_y, scale_factor);
-        }
-        if let InventoryAction::CtxMenuOpen(item_index, mx, my) = action {
-            let w = assets.ctx_menu.width() * scale_factor;
-            let h = assets.ctx_menu.height() * scale_factor;
-            draw_texture_ex(
-                &assets.ctx_menu,
-                *mx,
-                *my,
-                WHITE,
-                DrawTextureParams {
-                    dest_size: Some(vec2(w, h)),
-                    ..Default::default()
-                },
-            );
-            let player_free_slot = player.get_free_slot();
-            let player_first_free = player.inventory[0].is_none();
-            let player_second_free = player.inventory[1].is_none();
-            let item_index = *item_index;
-
-            let combinable = get_combinable(&player.inventory, item_index);
-            let has_combinable = !combinable.is_empty();
-
-            let buttons: [CtxMenuButton; 5] = [
-                ("Move", &|_| true, &|state, _| {
-                    *state = InventoryState::Inventory(InventoryAction::MovingItem(item_index))
-                }),
-                (
-                    "Equip",
-                    &|item| match item {
-                        Item::Weapon(_) => {
-                            if item_index == 0 {
-                                player_free_slot.is_some()
-                            } else {
-                                player_first_free
-                            }
-                        }
-                        Item::Armor(_) => {
-                            if item_index == 1 {
-                                player_free_slot.is_some()
-                            } else {
-                                player_second_free
-                            }
-                        }
-                        _ => false,
-                    },
-                    &|_, player| {
-                        let target_index = match player.inventory[item_index].unwrap() {
-                            Item::Weapon(_) => 0,
-                            Item::Armor(_) => 1,
-                            _ => panic!(),
-                        };
-                        if item_index == target_index {
-                            (
-                                player.inventory[item_index],
-                                player.inventory[player_free_slot.unwrap()],
-                            ) = (
-                                player.inventory[player_free_slot.unwrap()],
-                                player.inventory[item_index],
-                            );
-                        } else {
-                            (player.inventory[item_index], player.inventory[target_index]) =
-                                (player.inventory[target_index], player.inventory[item_index]);
-                        }
-                    },
-                ),
-                // todo: add these
-                ("Combine", &|_| has_combinable, &|state, _| {
-                    *state = InventoryState::Inventory(InventoryAction::CombiningItem(
-                        item_index,
-                        combinable.clone(),
-                    ));
-                }),
-                ("Throw", &|_| true, &|_, _| {}),
-                ("Trash", &|_| true, &|_, player| {
-                    player.inventory[item_index] = None;
-                }),
-            ];
-            let mut any_clicked = false;
-            for (index, (mut text, cond, on_click)) in buttons.into_iter().enumerate() {
-                let x = *mx + 2.0 * scale_factor;
-                let y = *my + index as f32 * 7.0 * scale_factor + 2.0 * scale_factor;
-                let hovered = (x..(x + w)).contains(&mouse_x)
-                    && (y..(y + 7.0 * scale_factor)).contains(&mouse_y);
-
-                let mut color = if hovered { GOLD } else { WHITE };
-                let disabled = !cond(&player.inventory[item_index].unwrap());
-                if disabled {
-                    color = GRAY;
-                }
-                if !disabled && text == "Equip" && item_index <= 1 {
-                    text = "Unequip";
-                }
-
-                draw_text_ex(
-                    text,
-                    x,
-                    y + 6.0 * scale_factor,
-                    TextParams {
-                        color,
-                        font: Some(&assets.font),
-                        font_size: (scale_factor * 6.0) as u16,
-                        ..Default::default()
-                    },
+            if clicking {
+                let scale_factor =
+                    (actual_screen_width / SCREEN_WIDTH).min(actual_screen_height / SCREEN_HEIGHT);
+                let (mouse_x, mouse_y) = (mouse_x / scale_factor, mouse_y / scale_factor);
+                let mouse_tile = vec2(
+                    (((mouse_x) / player.camera_zoom + player.camera_pos.x) / 8.0).floor(),
+                    (((mouse_y) / player.camera_zoom + player.camera_pos.y) / 8.0).floor(),
                 );
-                if !disabled && hovered && clicking {
-                    any_clicked = true;
-                    *state = InventoryState::Inventory(InventoryAction::None);
-                    on_click(state, player);
-                    break;
-                }
-            }
-            if !any_clicked && clicking {
-                *state = InventoryState::Inventory(InventoryAction::None);
+
+                player.should_throw_item = Some((*index, mouse_tile));
+                *state = InventoryState::Closed;
             }
         }
+        _ => {}
     }
 }
 

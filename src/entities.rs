@@ -39,6 +39,7 @@ pub struct Player {
     pub inventory: Vec<Option<Item>>,
     pub health: f32,
     pub was_damaged: bool,
+    pub should_throw_item: Option<(usize, Vec2)>,
 }
 impl Default for Player {
     fn default() -> Self {
@@ -59,6 +60,7 @@ impl Default for Player {
             inventory,
             health: MAX_PLAYER_HP,
             was_damaged: false,
+            should_throw_item: None,
         }
     }
 }
@@ -156,6 +158,38 @@ impl Player {
         // stop moving towards target if any key is pressed
         if !self.moving_to.is_empty() && !get_keys_pressed().is_empty() {
             self.moving_to = Vec::new();
+        }
+        if let GameState::Idle = state
+            && let Some((index, pos)) = self.should_throw_item
+        {
+            let item = self.inventory[index].take().unwrap();
+            self.should_throw_item = None;
+            let self_pos = vec2(self.x as f32, self.y as f32);
+            let delta_normalized = (pos - self_pos).normalize();
+            let mut current = self_pos;
+            let max_step = 0.15;
+            loop {
+                current += delta_normalized * max_step;
+                let (tx, ty) = ((current.x).round() as usize, (current.y).round() as usize);
+                if !dungeon.tiles[tx + ty * TILES_HORIZONTAL].is_walkable() {
+                    break;
+                }
+                if let Some(enemy) = dungeon.enemies.iter_mut().find(|f| f.x == tx && f.y == ty) {
+                    let throwable = item.throwable().unwrap();
+                    enemy.health -= throwable.0;
+                    enemy.was_attacked = true;
+                    let dest = pos * 8.0 + 4.0;
+                    dungeon.particles.push(Box::new(ProjectileParticle {
+                        sprite_x: throwable.1.x,
+                        sprite_y: throwable.1.y,
+                        origin: self.draw_pos + 4.0,
+                        dest,
+                    }));
+                    break;
+                }
+            }
+
+            return Some(PlayerAction::Attack(delta_normalized));
         }
         if let GameState::Idle = state
             && let Some((tile_x, tile_y)) = click

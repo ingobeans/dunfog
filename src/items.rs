@@ -5,7 +5,7 @@ pub static ITEM_COMBINATIONS: &[([Item; 2], Item)] = &[
     //
     (
         [Item::Misc(&STONE), Item::Misc(&STICK)],
-        Item::Misc(&STONE_ARROW),
+        Item::Weapon(&STONE_SPEAR),
     ),
 ];
 
@@ -63,6 +63,7 @@ pub struct Weapon {
     pub sprite_y: f32,
     pub name: &'static str,
     pub fires_particle: Option<(f32, f32)>,
+    pub throwable: Option<(f32, Vec2)>,
 }
 impl Weapon {
     fn get_desc(&self) -> String {
@@ -80,6 +81,7 @@ pub const MELEE: Weapon = Weapon {
     sprite_y: 0.0,
     name: "melee",
     fires_particle: None,
+    throwable: None,
 };
 pub const DAGGER: Weapon = Weapon {
     attack_range: 1..2,
@@ -88,6 +90,7 @@ pub const DAGGER: Weapon = Weapon {
     sprite_y: 0.0,
     name: "dagger",
     fires_particle: None,
+    throwable: None,
 };
 pub const BOW: Weapon = Weapon {
     attack_range: 2..4,
@@ -96,6 +99,16 @@ pub const BOW: Weapon = Weapon {
     sprite_y: 0.0,
     name: "bow",
     fires_particle: Some((0.0, 0.0)),
+    throwable: None,
+};
+pub const STONE_SPEAR: Weapon = Weapon {
+    attack_range: 1..2,
+    sprite_x: 2.0,
+    sprite_y: 2.0,
+    base_damage: 2.0,
+    fires_particle: None,
+    name: "stone spear",
+    throwable: Some((5.0, vec2(1.0, 0.0))),
 };
 pub const IRON_ARMOR: Armor = Armor {
     block_chance: 0.4,
@@ -109,30 +122,28 @@ pub struct MiscItem {
     sprite_y: f32,
     name: &'static str,
     desc: &'static str,
+    throwable: Option<(f32, Vec2)>,
 }
 pub const STICK: MiscItem = MiscItem {
     sprite_x: 0.0,
     sprite_y: 2.0,
     name: "stick",
     desc: "a cool stick",
+    throwable: None,
 };
 pub const BONE: MiscItem = MiscItem {
     sprite_x: 3.0,
     sprite_y: 2.0,
     name: "bone",
     desc: "a real bone",
+    throwable: None,
 };
 pub const STONE: MiscItem = MiscItem {
     sprite_x: 1.0,
     sprite_y: 2.0,
     name: "stone",
     desc: "a small stone",
-};
-pub const STONE_ARROW: MiscItem = MiscItem {
-    sprite_x: 2.0,
-    sprite_y: 2.0,
-    name: "stone arrow",
-    desc: "a basic arrow",
+    throwable: Some((3.0, vec2(2.0, 0.0))),
 };
 #[derive(Clone, Copy, PartialEq)]
 pub enum Item {
@@ -160,6 +171,13 @@ impl Item {
             Item::Weapon(weapon) => weapon.get_desc(),
             Item::Armor(armor) => armor.get_desc(),
             Item::Misc(misc_item) => misc_item.desc.to_string(),
+        }
+    }
+    pub fn throwable(&self) -> Option<(f32, Vec2)> {
+        match &self {
+            Item::Weapon(weapon) => weapon.throwable,
+            Item::Armor(_) => None,
+            Item::Misc(misc_item) => misc_item.throwable,
         }
     }
 }
