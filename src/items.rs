@@ -2,10 +2,14 @@ use crate::utils::*;
 use macroquad::prelude::*;
 
 pub static ITEM_COMBINATIONS: &[([Item; 2], Item)] = &[
-    //
     (
         [Item::Misc(&STONE), Item::Misc(&STICK)],
         Item::Weapon(&STONE_SPEAR),
+    ),
+    ([Item::Misc(&LEAF), Item::Misc(&LEAF)], Item::Misc(&FIBER)),
+    (
+        [Item::Misc(&FIBER), Item::Misc(&FIBER)],
+        Item::Armor(&TUNIC),
     ),
 ];
 
@@ -101,10 +105,19 @@ pub const BOW: Weapon = Weapon {
     fires_particle: Some((0.0, 0.0)),
     throwable: None,
 };
+pub const SPELLBOOK: Weapon = Weapon {
+    attack_range: 2..4,
+    base_damage: 5.0,
+    sprite_x: 3.0,
+    sprite_y: 0.0,
+    name: "spellbook",
+    fires_particle: Some((3.0, 0.0)),
+    throwable: None,
+};
 pub const STONE_SPEAR: Weapon = Weapon {
     attack_range: 1..2,
-    sprite_x: 2.0,
-    sprite_y: 2.0,
+    sprite_x: 4.0,
+    sprite_y: 0.0,
     base_damage: 2.0,
     fires_particle: None,
     name: "stone spear",
@@ -116,6 +129,14 @@ pub const IRON_ARMOR: Armor = Armor {
     sprite_y: 1.0,
     name: "iron armor",
 };
+pub const TUNIC: Armor = Armor {
+    block_chance: 0.3,
+    sprite_x: 2.0,
+    sprite_y: 1.0,
+    name: "leather tunic",
+};
+#[derive(Clone, PartialEq)]
+pub enum StatusEffect {}
 #[derive(Clone, PartialEq)]
 pub struct MiscItem {
     sprite_x: f32,
@@ -123,6 +144,7 @@ pub struct MiscItem {
     name: &'static str,
     desc: &'static str,
     throwable: Option<(f32, Vec2)>,
+    consumable: Option<(f32, Option<StatusEffect>)>,
 }
 pub const STICK: MiscItem = MiscItem {
     sprite_x: 0.0,
@@ -130,6 +152,7 @@ pub const STICK: MiscItem = MiscItem {
     name: "stick",
     desc: "a cool stick",
     throwable: None,
+    consumable: None,
 };
 pub const BONE: MiscItem = MiscItem {
     sprite_x: 3.0,
@@ -137,6 +160,7 @@ pub const BONE: MiscItem = MiscItem {
     name: "bone",
     desc: "a real bone",
     throwable: None,
+    consumable: None,
 };
 pub const STONE: MiscItem = MiscItem {
     sprite_x: 1.0,
@@ -144,6 +168,31 @@ pub const STONE: MiscItem = MiscItem {
     name: "stone",
     desc: "a small stone",
     throwable: Some((3.0, vec2(2.0, 0.0))),
+    consumable: None,
+};
+pub const FLESH: MiscItem = MiscItem {
+    sprite_x: 2.0,
+    sprite_y: 2.0,
+    name: "flesh",
+    desc: "consumable flesh",
+    throwable: None,
+    consumable: None,
+};
+pub const LEAF: MiscItem = MiscItem {
+    sprite_x: 4.0,
+    sprite_y: 2.0,
+    name: "leaf",
+    desc: "can be crafted into fiber",
+    throwable: None,
+    consumable: None,
+};
+pub const FIBER: MiscItem = MiscItem {
+    sprite_x: 5.0,
+    sprite_y: 2.0,
+    name: "fiber",
+    desc: "useful for crafting clothes",
+    throwable: None,
+    consumable: None,
 };
 #[derive(Clone, Copy, PartialEq)]
 pub enum Item {

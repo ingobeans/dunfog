@@ -11,11 +11,13 @@ pub const FIRST_FLOOR: DungeonFloor = DungeonFloor {
     rooms_area: 5 * 5 * 5,
     get_sprite: &get_tile,
     per_room_fn: &|x: usize, y: usize, w: usize, h: usize, _, enemies| {
-        enemies.push(Enemy::new(
-            x + rand::gen_range(0, w),
-            y + rand::gen_range(0, h),
-            &ZOMBIE,
-        ));
+        if rand::gen_range(0, 5) < 3 {
+            enemies.push(Enemy::new(
+                x + rand::gen_range(0, w),
+                y + rand::gen_range(0, h),
+                &ZOMBIE,
+            ));
+        }
     },
     post_gen_fn: &|dungeon| {
         place_random_door(dungeon);
@@ -36,6 +38,19 @@ pub const SECOND_FLOOR: DungeonFloor = DungeonFloor {
             ty,
         ));
     },
+    post_gen_fn: &|dungeon| {
+        (FIRST_FLOOR.post_gen_fn)(dungeon);
+        let mut walkables = get_walkables(&dungeon.tiles);
+        let amt = rand::gen_range(0, 4);
+        for _ in 0..amt {
+            let rng = rand::gen_range(0, walkables.len());
+            let (index, _) = walkables.remove(rng);
+            let (x, y) = (index % TILES_HORIZONTAL, index / TILES_HORIZONTAL);
+            if !dungeon.enemies.iter().any(|f| (f.x, f.y) == (x, y)) {
+                dungeon.enemies.push(Enemy::new(x, y, &BAT));
+            }
+        }
+    },
     ..FIRST_FLOOR
 };
 
@@ -51,8 +66,8 @@ fn get_tile(tile: &Tile) -> (f32, f32) {
     }
 }
 
-fn get_random_walkable<'a>(tiles: &'a [Tile]) -> (usize, &'a Tile) {
-    let walkables: Vec<(usize, &'a Tile)> = tiles
+fn get_walkables<'a>(tiles: &'a [Tile]) -> Vec<(usize, &'a Tile)> {
+    tiles
         .iter()
         .enumerate()
         .filter_map(|(i, f)| {
@@ -62,7 +77,11 @@ fn get_random_walkable<'a>(tiles: &'a [Tile]) -> (usize, &'a Tile) {
                 None
             }
         })
-        .collect();
+        .collect()
+}
+
+fn get_random_walkable<'a>(tiles: &'a [Tile]) -> (usize, &'a Tile) {
+    let walkables = get_walkables(tiles);
     walkables[rand::gen_range(0, walkables.len())]
 }
 

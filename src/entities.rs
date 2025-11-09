@@ -404,6 +404,46 @@ pub static SPIDER: EnemyType = EnemyType {
     weapon: &MELEE,
     show_held_item: false,
 };
+pub static BAT: EnemyType = EnemyType {
+    block_chance: 0.8,
+    death_drops: None,
+    sprite_x: 0.0,
+    sprite_y: 5.0,
+    max_health: 6.0,
+    movement_type: MovementType::ChaseWhenVisible,
+    weapon: &MELEE,
+    show_held_item: false,
+};
+pub static SLIME: EnemyType = EnemyType {
+    block_chance: 0.0,
+    death_drops: None,
+    sprite_x: 0.0,
+    sprite_y: 6.0,
+    max_health: 16.0,
+    movement_type: MovementType::ChaseWhenVisible,
+    weapon: &MELEE,
+    show_held_item: false,
+};
+pub static WIZARD: EnemyType = EnemyType {
+    block_chance: 0.2,
+    death_drops: None,
+    sprite_x: 0.0,
+    sprite_y: 7.0,
+    max_health: 10.0,
+    movement_type: MovementType::AlwaysChase,
+    weapon: &SPELLBOOK,
+    show_held_item: false,
+};
+pub static LAVA_DOG: EnemyType = EnemyType {
+    block_chance: 0.6,
+    death_drops: None,
+    sprite_x: 0.0,
+    sprite_y: 8.0,
+    max_health: 5.0,
+    movement_type: MovementType::AlwaysChase,
+    weapon: &MELEE,
+    show_held_item: false,
+};
 
 pub enum EnemyAction {
     MoveTo((usize, usize)),
@@ -623,18 +663,5 @@ impl Enemy {
                 None,
             );
         }
-
-        // if let Some(target) = &self.last_pathfind_target {
-        //     draw_rectangle_lines(target.x * 8.0, target.y * 8.0, 8.0, 8.0, 2.0, RED);
-        // }
-        // let angle_vec = Vec2::from_angle(self.favorite_angle);
-        // draw_line(
-        //     self.draw_pos.x + 4.0,
-        //     self.draw_pos.y + 4.0,
-        //     self.draw_pos.x + 4.0 + angle_vec.x * 12.0,
-        //     self.draw_pos.y + 4.0 + angle_vec.y * 12.0,
-        //     2.0,
-        //     YELLOW,
-        // );
     }
 }

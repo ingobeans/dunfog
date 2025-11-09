@@ -8,6 +8,7 @@ pub static BUSH_LOOT: LazyLock<LootTable> = LazyLock::new(|| {
         //
         entries: vec![
             (1.0, LootEntry::Item(Item::Misc(&STICK))),
+            (2.0, LootEntry::Item(Item::Misc(&LEAF))),
             (1.0, LootEntry::None),
         ],
     }
