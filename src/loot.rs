@@ -20,28 +20,47 @@ pub static SKELETON_DROPS: LazyLock<LootTable> = LazyLock::new(|| {
     LootTable {
         //
         entries: vec![
-            (1.0, LootEntry::Item(Item::Misc(&STICK))),
+            (0.5, LootEntry::Item(Item::Misc(&STICK))),
             (1.0, LootEntry::Item(Item::Misc(&BONE))),
             (0.1, LootEntry::Item(Item::Weapon(&SHORTBOW))),
-            (1.0, LootEntry::None),
+            (0.5, LootEntry::None),
         ],
     }
 });
-pub static ZOMBIE_DROPS: LazyLock<LootTable> = LazyLock::new(|| {
-    LootTable {
+pub static ZOMBIE_DROPS: LazyLock<LootTable> = LazyLock::new(|| LootTable {
+    entries: vec![
+        (3.0, LootEntry::Item(Item::Misc(&FLESH))),
+        (1.0, LootEntry::None),
+    ],
+});
+pub static JUNK_LOOT: LazyLock<LootTable> = LazyLock::new(|| LootTable {
+    entries: vec![
         //
-        entries: vec![
-            (3.0, LootEntry::Item(Item::Misc(&FLESH))),
-            (1.0, LootEntry::None),
-        ],
-    }
+        (1.0, LootEntry::Item(Item::Misc(&STICK))),
+        (1.0, LootEntry::Item(Item::Misc(&STONE))),
+        (2.0, LootEntry::Item(Item::Misc(&BONE))),
+        (0.5, LootEntry::Item(Item::Weapon(&DAGGER))),
+    ],
+});
+pub static SLIME_DROPS: LazyLock<LootTable> = LazyLock::new(|| LootTable {
+    entries: vec![
+        (4.0, LootEntry::Item(Item::Misc(&SLIME_GEL))),
+        (1.0, LootEntry::LootTable(&JUNK_LOOT)),
+        (1.0, LootEntry::None),
+    ],
+});
+pub static SPIDER_DROPS: LazyLock<LootTable> = LazyLock::new(|| LootTable {
+    entries: vec![
+        (3.0, LootEntry::Item(Item::Misc(&FIBER))),
+        (1.0, LootEntry::None),
+    ],
 });
 
 #[expect(dead_code)]
 enum LootEntry {
     None,
     Item(Item),
-    LootEntry(&'static LootTable),
+    LootTable(&'static LootTable),
 }
 
 fn weighted_choice(choices: &[(f32, LootEntry)]) -> &LootEntry {
@@ -70,7 +89,7 @@ impl LootTable {
         match result {
             LootEntry::None => None,
             LootEntry::Item(item) => Some(item),
-            LootEntry::LootEntry(table) => table.get_item(),
+            LootEntry::LootTable(table) => table.get_item(),
         }
     }
 }

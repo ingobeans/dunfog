@@ -273,6 +273,14 @@ pub const POISON_ROCK: MiscItem = MiscItem {
     throwable: Some((3.0, vec2(4.0, 0.0))),
     consumable: Some((0.0, Some(StatusEffect::Poison))),
 };
+pub const SLIME_GEL: MiscItem = MiscItem {
+    sprite_x: 9.0,
+    sprite_y: 2.0,
+    name: "slime gel",
+    desc: "gooey substance!",
+    throwable: None,
+    consumable: Some((1.0, None)),
+};
 #[derive(Clone, Copy, PartialEq)]
 pub enum Item {
     Weapon(&'static Weapon),

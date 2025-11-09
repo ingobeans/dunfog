@@ -423,16 +423,16 @@ pub static SKELETON: LazyLock<EnemyType> = LazyLock::new(|| EnemyType {
     weapon: &SHORTBOW,
     show_held_item: false,
 });
-pub static SPIDER: EnemyType = EnemyType {
+pub static SPIDER: LazyLock<EnemyType> = LazyLock::new(|| EnemyType {
     block_chance: 0.5,
-    death_drops: None,
+    death_drops: Some(&SPIDER_DROPS),
     sprite_x: 0.0,
     sprite_y: 4.0,
     max_health: 6.0,
     movement_type: MovementType::AlwaysChase,
     weapon: &MELEE,
     show_held_item: false,
-};
+});
 pub static BAT: EnemyType = EnemyType {
     block_chance: 0.8,
     death_drops: None,
@@ -443,16 +443,16 @@ pub static BAT: EnemyType = EnemyType {
     weapon: &MELEE,
     show_held_item: false,
 };
-pub static SLIME: EnemyType = EnemyType {
+pub static SLIME: LazyLock<EnemyType> = LazyLock::new(|| EnemyType {
     block_chance: 0.0,
-    death_drops: None,
+    death_drops: Some(&SLIME_DROPS),
     sprite_x: 0.0,
     sprite_y: 7.0,
     max_health: 16.0,
     movement_type: MovementType::ChaseWhenVisible,
     weapon: &MELEE,
     show_held_item: false,
-};
+});
 pub static WIZARD: EnemyType = EnemyType {
     block_chance: 0.2,
     death_drops: None,
