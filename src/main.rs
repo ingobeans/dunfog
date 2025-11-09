@@ -199,6 +199,33 @@ impl<'a> Dunfog<'a> {
         } else {
             None
         };
+
+        if let GameState::PlayerAction(_) = &self.state
+            && let Some(PlayerAction::MoveDirection(dir)) = &self.player.active_action
+            && !is_mouse_button_down(MouseButton::Middle)
+        {
+            let max_dist = 16.0;
+            let pos = self.player.draw_pos;
+            let screen = vec2(
+                actual_screen_width / scale_factor,
+                actual_screen_height / scale_factor,
+            );
+            let camera_world = self.player.camera_pos + screen / 2.0;
+            let delta = camera_world - pos;
+            if delta.x > max_dist && dir.x < 0.0 {
+                self.player.camera_pos.x = max_dist + pos.x - screen.x / 2.0;
+            }
+            if delta.x < -max_dist && dir.x > 0.0 {
+                self.player.camera_pos.x = -max_dist + pos.x - screen.x / 2.0;
+            }
+            if delta.y > max_dist && dir.y < 0.0 {
+                self.player.camera_pos.y = max_dist + pos.y - screen.y / 2.0;
+            }
+            if delta.y < -max_dist && dir.y > 0.0 {
+                self.player.camera_pos.y = -max_dist + pos.y - screen.y / 2.0;
+            }
+        }
+
         let mut click = None;
         if let Some(cursor_tile) = cursor_tile
             && is_mouse_button_pressed(MouseButton::Left)
