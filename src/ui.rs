@@ -359,6 +359,18 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                         }),
                     );
                 }
+                if slot.is_some()
+                    && let InventoryAction::CombiningItem(_, combinables) = &action
+                    && !combinables.contains(&i)
+                {
+                    draw_rectangle(
+                        draw_x - 2.0 * scale_factor,
+                        draw_y - 2.0 * scale_factor,
+                        12.0 * scale_factor,
+                        12.0 * scale_factor,
+                        BLACK.with_alpha(0.5),
+                    );
+                }
             }
 
             let cursor_item = match &action {
