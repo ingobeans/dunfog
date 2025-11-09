@@ -47,8 +47,8 @@ pub struct Player {
 impl Default for Player {
     fn default() -> Self {
         let mut inventory = vec![None; 14];
-        inventory[0] = Some(Item::Weapon(&DAGGER));
-        inventory[1] = Some(Item::Armor(&TUNIC));
+        inventory[0] = Some(Item::Weapon(&IRON_SWORD));
+        inventory[1] = Some(Item::Armor(&IRON_ARMOR));
         inventory[2] = Some(Item::Misc(&STICK));
         inventory[3] = Some(Item::Misc(&STONE));
         Self {
@@ -505,13 +505,23 @@ pub static SLIME: LazyLock<EnemyType> = LazyLock::new(|| EnemyType {
     show_held_item: false,
 });
 pub static WIZARD: EnemyType = EnemyType {
-    block_chance: 0.2,
+    block_chance: 0.1,
     death_drops: None,
     sprite_x: 0.0,
     sprite_y: 8.0,
     max_health: 10.0,
     movement_type: MovementType::AlwaysChase,
     weapon: &SPELLBOOK,
+    show_held_item: false,
+};
+pub static SUPER_WIZARD: EnemyType = EnemyType {
+    block_chance: 0.2,
+    death_drops: None,
+    sprite_x: 1.0,
+    sprite_y: 8.0,
+    max_health: 15.0,
+    movement_type: MovementType::AlwaysChase,
+    weapon: &SUPER_SPELLBOOK,
     show_held_item: false,
 };
 pub static LAVA_DOG: EnemyType = EnemyType {

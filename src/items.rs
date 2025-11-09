@@ -176,6 +176,15 @@ pub const SPELLBOOK: Weapon = Weapon {
     fires_particle: Some((3.0, 0.0)),
     throwable: None,
 };
+pub const SUPER_SPELLBOOK: Weapon = Weapon {
+    attack_range: 2..5,
+    base_damage: 6.0,
+    sprite_x: 10.0,
+    sprite_y: 0.0,
+    name: "super spellbook",
+    fires_particle: Some((3.0, 1.0)),
+    throwable: None,
+};
 pub const STONE_SPEAR: Weapon = Weapon {
     attack_range: 1..2,
     sprite_x: 4.0,
@@ -219,7 +228,7 @@ pub const BONE_SPEAR: Weapon = Weapon {
     ..STONE_SPEAR
 };
 pub const IRON_ARMOR: Armor = Armor {
-    block_chance: 0.4,
+    block_chance: 0.5,
     sprite_x: 0.0,
     sprite_y: 1.0,
     name: "iron armor",

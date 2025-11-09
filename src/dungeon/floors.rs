@@ -120,11 +120,14 @@ pub const FOURTH_FLOOR: DungeonFloor = DungeonFloor {
             Tile::Detail(tile_x, tile_y) => (*tile_x, *tile_y),
             Tile::Ore(tile_x, tile_y, _) => (*tile_x, *tile_y),
         };
-        (tile.0, tile.1 + 10.0)
+        if tile.1 == 0.0 {
+            return tile;
+        }
+        (tile.0, tile.1 + 9.0)
     },
     per_room_fn: &|x: usize, y: usize, w: usize, h: usize, _, enemies| {
         for _ in 0..rand::gen_range(0, 3) {
-            let ty = [&WIZARD, &LAVA_DOG, &ZOMBIE][rand::gen_range(0, 3)];
+            let ty = [&LAVA_DOG, &ZOMBIE][rand::gen_range(0, 3)];
             enemies.push(Enemy::new(
                 x + rand::gen_range(0, w),
                 y + rand::gen_range(0, h),
@@ -134,13 +137,13 @@ pub const FOURTH_FLOOR: DungeonFloor = DungeonFloor {
     },
     post_gen_fn: &|dungeon| {
         let mut walkables = get_walkables(&dungeon.tiles);
-        let amt = rand::gen_range(0, 5);
+        let amt = rand::gen_range(1, 3);
         for _ in 0..amt {
             let rng = rand::gen_range(0, walkables.len());
             let (index, _) = walkables.remove(rng);
             let (x, y) = (index % TILES_HORIZONTAL, index / TILES_HORIZONTAL);
             if !dungeon.enemies.iter().any(|f| (f.x, f.y) == (x, y)) {
-                dungeon.enemies.push(Enemy::new(x, y, &LAVA_DOG));
+                dungeon.enemies.push(Enemy::new(x, y, &WIZARD));
             }
         }
         (FIRST_FLOOR.post_gen_fn)(dungeon);

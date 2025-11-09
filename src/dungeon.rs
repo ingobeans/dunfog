@@ -12,7 +12,13 @@ use floors::*;
 
 mod floors;
 
-pub const DUNGEON_FLOORS: &[DungeonFloor] = &[FIRST_FLOOR, SECOND_FLOOR, THIRD_FLOOR, FOURTH_FLOOR];
+pub const DUNGEON_FLOORS: &[DungeonFloor] = &[
+    FIRST_FLOOR,
+    SECOND_FLOOR,
+    THIRD_FLOOR,
+    FOURTH_FLOOR,
+    FIFTH_FLOOR,
+];
 
 type PerRoomFn = &'static dyn Fn(usize, usize, usize, usize, &mut Vec<Tile>, &mut Vec<Enemy>);
 
@@ -72,7 +78,7 @@ impl Dungeon {
                 }
                 [255, 0, 255, _] => {
                     tiles[index] = Tile::Floor;
-                    enemies.push(Enemy::new(x, y, &WIZARD));
+                    enemies.push(Enemy::new(x, y, &SUPER_WIZARD));
                 }
                 [255, 0, 100, _] => {
                     tiles[index] = Tile::Chest(5.0, 1.0, &MUSHROOM_LOOT);
