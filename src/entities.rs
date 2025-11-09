@@ -185,26 +185,31 @@ impl Player {
             let delta_normalized = (pos - self_pos).normalize();
             let mut current = self_pos;
             let max_step = 0.15;
+            let throwable = item.throwable().unwrap();
             loop {
                 current += delta_normalized * max_step;
+
                 let (tx, ty) = ((current.x).round() as usize, (current.y).round() as usize);
                 if !dungeon.tiles[tx + ty * TILES_HORIZONTAL].is_walkable() {
+                    current -= delta_normalized * max_step;
+                    let (tx, ty) = ((current.x).round() as usize, (current.y).round() as usize);
+                    dungeon.items.push((tx, ty, item));
                     break;
                 }
                 if let Some(enemy) = dungeon.enemies.iter_mut().find(|f| f.x == tx && f.y == ty) {
-                    let throwable = item.throwable().unwrap();
-                    enemy.damage(throwable.0);
-                    let dest = pos * 8.0 + 4.0;
-                    dungeon.particles.push(Box::new(ProjectileParticle {
-                        sprite_x: throwable.1.x,
-                        sprite_y: throwable.1.y,
-                        origin: self.draw_pos + 4.0,
-                        dest,
-                    }));
+                    if !enemy.damage(throwable.0) {
+                        dungeon.items.push((tx, ty, item));
+                    }
                     break;
                 }
             }
 
+            dungeon.particles.push(Box::new(ProjectileParticle {
+                sprite_x: throwable.1.x,
+                sprite_y: throwable.1.y,
+                origin: self.draw_pos + 4.0,
+                dest: current * 8.0 + 4.0,
+            }));
             return Some(PlayerAction::Attack(delta_normalized));
         }
         if let GameState::Idle = state
@@ -515,11 +520,14 @@ impl Enemy {
             self.reset_draw_pos();
         }
     }
-    pub fn damage(&mut self, amt: f32) {
+    pub fn damage(&mut self, amt: f32) -> bool {
         let rng = rand::gen_range(0.0, 1.0);
         if self.ty.block_chance < rng {
             self.was_damaged = true;
             self.health -= amt;
+            true
+        } else {
+            false
         }
     }
     pub fn act(&mut self, dungeon: &mut Dungeon, player: &mut Player) -> EnemyAction {
