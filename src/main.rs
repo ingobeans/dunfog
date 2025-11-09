@@ -23,6 +23,7 @@ enum Tile {
     Door,
     Chest(f32, f32, &'static LootTable),
     Detail(f32, f32),
+    Ore(f32, f32, &'static LootTable),
 }
 
 impl Tile {

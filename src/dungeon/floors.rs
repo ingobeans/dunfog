@@ -69,6 +69,13 @@ pub const SECOND_FLOOR: DungeonFloor = DungeonFloor {
                 dungeon.enemies.push(Enemy::new(x, y, &BAT));
             }
         }
+        // generate veins of iron
+        for _ in 0..rand::gen_range(1, 3) {
+            let i = get_random_walkable(&dungeon.tiles).0;
+            for (x, y) in drunkards_walk(dungeon, (i % TILES_HORIZONTAL, i / TILES_HORIZONTAL), 2) {
+                dungeon.tiles[x + y * TILES_HORIZONTAL] = Tile::Ore(7.0, 1.0, &IRON_LOOT);
+            }
+        }
     },
     ..FIRST_FLOOR
 };
@@ -95,6 +102,11 @@ pub const THIRD_FLOOR: DungeonFloor = DungeonFloor {
                 dungeon.enemies.push(Enemy::new(x, y, &SPIDER));
             }
         }
+        // generate vein of iron
+        let i = get_random_walkable(&dungeon.tiles).0;
+        for (x, y) in drunkards_walk(dungeon, (i % TILES_HORIZONTAL, i / TILES_HORIZONTAL), 2) {
+            dungeon.tiles[x + y * TILES_HORIZONTAL] = Tile::Ore(7.0, 1.0, &IRON_LOOT);
+        }
     },
     ..FIRST_FLOOR
 };
@@ -108,6 +120,7 @@ fn get_tile(tile: &Tile) -> (f32, f32) {
         Tile::Door => (2.0, 1.0),
         Tile::Chest(tile_x, tile_y, _) => (*tile_x, *tile_y),
         Tile::Detail(tile_x, tile_y) => (*tile_x, *tile_y),
+        Tile::Ore(tile_x, tile_y, _) => (*tile_x, *tile_y),
     }
 }
 

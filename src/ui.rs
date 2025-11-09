@@ -598,6 +598,13 @@ pub fn draw_ui(
             Tile::Door => {
                 draw_tooltip("E: descend", assets);
             }
+            Tile::Ore(_, _, _) => {
+                if player.has_pickaxe() {
+                    draw_tooltip("E: Mine ore", assets);
+                } else {
+                    draw_tooltip("Pickaxe required", assets);
+                }
+            }
             _ => {
                 if dungeon
                     .items

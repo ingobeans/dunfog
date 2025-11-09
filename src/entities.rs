@@ -67,6 +67,16 @@ impl Default for Player {
     }
 }
 impl Player {
+    pub fn has_pickaxe(&self) -> bool {
+        for item in &self.inventory {
+            if let Some(Item::Weapon(item)) = item
+                && *item == &STONE_AXE
+            {
+                return true;
+            }
+        }
+        false
+    }
     pub fn consume(&mut self, index: usize) {
         if let Some(Item::Misc(item)) = self.inventory[index].take()
             && let Some((heal, status)) = &item.consumable
@@ -360,6 +370,23 @@ impl Player {
                     None
                 }
                 Tile::Door => Some(PlayerAction::GotoNextDungeon),
+                Tile::Ore(sprite_x, sprite_y, _) => {
+                    if self.has_pickaxe() {
+                        let mut buffer = Tile::Detail(*sprite_x + 1.0, *sprite_y);
+                        std::mem::swap(&mut buffer, tile);
+                        if let Tile::Ore(_, _, loot) = buffer
+                            && let Some(item) = loot.get_item()
+                        {
+                            if let Some(slot) = self.get_free_slot() {
+                                self.inventory[slot] = Some(*item);
+                            } else {
+                                dungeon.items.push((self.x, self.y, *item));
+                            }
+                        }
+                    }
+
+                    None
+                }
                 _ => {
                     if let Some(item) = dungeon
                         .items

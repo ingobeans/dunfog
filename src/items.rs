@@ -39,6 +39,18 @@ pub static ITEM_COMBINATIONS: &[([Item; 2], Item)] = &[
         [Item::Misc(&AXE_BLADE), Item::Misc(&STICK)],
         Item::Weapon(&STONE_AXE),
     ),
+    (
+        [Item::Misc(&IRON_ORE), Item::Misc(&IRON_ORE)],
+        Item::Misc(&IRON_BLADE),
+    ),
+    (
+        [Item::Misc(&IRON_BLADE), Item::Misc(&STICK)],
+        Item::Weapon(&IRON_SWORD),
+    ),
+    (
+        [Item::Misc(&IRON_ORE), Item::Weapon(&LONGBOW)],
+        Item::Weapon(&IRON_BOW),
+    ),
 ];
 
 pub fn combine(a: Item, b: Item) -> Item {
@@ -168,6 +180,24 @@ pub const STONE_SPEAR: Weapon = Weapon {
     fires_particle: None,
     name: "stone spear",
     throwable: Some((6.0, vec2(1.0, 0.0))),
+};
+pub const IRON_SWORD: Weapon = Weapon {
+    attack_range: 1..2,
+    sprite_x: 7.0,
+    sprite_y: 0.0,
+    base_damage: 8.0,
+    fires_particle: None,
+    name: "iron sword",
+    throwable: Some((6.0, vec2(1.0, 0.0))),
+};
+pub const IRON_BOW: Weapon = Weapon {
+    attack_range: 2..4,
+    sprite_x: 9.0,
+    sprite_y: 0.0,
+    base_damage: 5.0,
+    fires_particle: Some((0.0, 0.0)),
+    name: "iron bow",
+    throwable: None,
 };
 pub const STONE_AXE: Weapon = Weapon {
     attack_range: 1..2,
@@ -305,6 +335,22 @@ pub const SLIME_GEL: MiscItem = MiscItem {
     desc: "gooey substance!",
     throwable: None,
     consumable: Some((1.0, None)),
+};
+pub const IRON_ORE: MiscItem = MiscItem {
+    sprite_x: 11.0,
+    sprite_y: 2.0,
+    name: "iron ore",
+    desc: "useable for blades!",
+    throwable: None,
+    consumable: None,
+};
+pub const IRON_BLADE: MiscItem = MiscItem {
+    sprite_x: 12.0,
+    sprite_y: 2.0,
+    name: "iron blade",
+    desc: "sharp as heck",
+    throwable: Some((4.0, vec2(7.0, 0.0))),
+    consumable: None,
 };
 #[derive(Clone, Copy, PartialEq)]
 pub enum Item {
