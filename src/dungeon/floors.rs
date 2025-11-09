@@ -111,7 +111,7 @@ fn get_tile(tile: &Tile) -> (f32, f32) {
     }
 }
 
-fn get_walkables<'a>(tiles: &'a [Tile]) -> Vec<(usize, &'a Tile)> {
+fn get_walkables(tiles: &[Tile]) -> Vec<(usize, &Tile)> {
     tiles
         .iter()
         .enumerate()
@@ -125,7 +125,7 @@ fn get_walkables<'a>(tiles: &'a [Tile]) -> Vec<(usize, &'a Tile)> {
         .collect()
 }
 
-fn get_random_walkable<'a>(tiles: &'a [Tile]) -> (usize, &'a Tile) {
+fn get_random_walkable(tiles: &[Tile]) -> (usize, &Tile) {
     let walkables = get_walkables(tiles);
     walkables[rand::gen_range(0, walkables.len())]
 }

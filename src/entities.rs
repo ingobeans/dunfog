@@ -74,7 +74,7 @@ impl Player {
             self.health = (self.health + heal).min(MAX_PLAYER_HP);
 
             if let Some(status) = status {
-                if let Some(e) = self.status_effects.get_mut(&status) {
+                if let Some(e) = self.status_effects.get_mut(status) {
                     *e += 3;
                 } else {
                     self.status_effects.insert(*status, 3);
@@ -203,7 +203,7 @@ impl Player {
             let throwable = item.throwable().unwrap();
             let status_effect = if let Item::Misc(misc) = item {
                 if let Some(consumable) = &misc.consumable {
-                    consumable.1.clone()
+                    consumable.1
                 } else {
                     None
                 }
@@ -347,15 +347,14 @@ impl Player {
                 Tile::Chest(sprite_x, sprite_y, _) => {
                     let mut buffer = Tile::Detail(*sprite_x + 1.0, *sprite_y);
                     std::mem::swap(&mut buffer, tile);
-                    if let Tile::Chest(_, _, loot) = buffer {
-                        if let Some(item) = loot.get_item() {
+                    if let Tile::Chest(_, _, loot) = buffer
+                        && let Some(item) = loot.get_item() {
                             if let Some(slot) = self.get_free_slot() {
                                 self.inventory[slot] = Some(*item);
                             } else {
                                 dungeon.items.push((self.x, self.y, *item));
                             }
                         }
-                    }
 
                     None
                 }

@@ -38,7 +38,7 @@ pub fn combine(a: Item, b: Item) -> Item {
         if (combination[0] == a && combination[1] == b)
             || combination[1] == a && combination[0] == b
         {
-            return result.clone();
+            return *result;
         }
     }
     panic!("no combination for these items exist!")
@@ -57,8 +57,8 @@ pub fn get_combinable(items: &[Option<Item>], index: usize) -> Vec<usize> {
             continue;
         };
         for (combination, _) in ITEM_COMBINATIONS {
-            if (&combination[0] == item && &combination[1] == &items[index].unwrap())
-                || &combination[1] == item && &combination[0] == &items[index].unwrap()
+            if (&combination[0] == item && combination[1] == items[index].unwrap())
+                || &combination[1] == item && combination[0] == items[index].unwrap()
             {
                 combinable.push(i);
             }

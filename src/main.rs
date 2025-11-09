@@ -107,14 +107,12 @@ impl<'a> Dunfog<'a> {
             } else if matches!(
                 self.player.tile_status[enemy.x + enemy.y * TILES_HORIZONTAL],
                 TileStatus::Known
-            ) {
-                if rand::gen_range(
-                    0,
-                    (enemy.x.abs_diff(self.player.x) + enemy.y.abs_diff(self.player.y)).min(14),
-                ) <= 2
-                {
-                    enemy.awaken();
-                }
+            ) && rand::gen_range(
+                0,
+                (enemy.x.abs_diff(self.player.x) + enemy.y.abs_diff(self.player.y)).min(14),
+            ) <= 2
+            {
+                enemy.awaken();
             }
         }
         std::mem::swap(&mut buffer, &mut self.dungeon.enemies);
@@ -340,10 +338,10 @@ impl<'a> Dunfog<'a> {
         let dead = self.dungeon.enemies.extract_if(.., |f| f.health <= 0.0);
         for enemy in dead {
             self.player.enemies_slayed += 1;
-            if let Some(loot_table) = enemy.ty.death_drops {
-                if let Some(item) = loot_table.get_item() {
-                    self.dungeon.items.push((enemy.x, enemy.y, item.clone()));
-                }
+            if let Some(loot_table) = enemy.ty.death_drops
+                && let Some(item) = loot_table.get_item()
+            {
+                self.dungeon.items.push((enemy.x, enemy.y, *item));
             }
         }
 

@@ -56,7 +56,6 @@ pub static SPIDER_DROPS: LazyLock<LootTable> = LazyLock::new(|| LootTable {
     ],
 });
 
-#[expect(dead_code)]
 enum LootEntry {
     None,
     Item(Item),
