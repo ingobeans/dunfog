@@ -195,7 +195,7 @@ impl<'a> Dunfog<'a> {
             {
                 if let entities::PlayerAction::GotoNextDungeon = action {
                     self.floor += 1;
-                    self.dungeon = Dungeon::generate_dungeon(&FIRST_FLOOR);
+                    self.dungeon = Dungeon::generate_dungeon(&DUNGEON_FLOORS[self.floor]);
                     self.player.tile_status =
                         vec![entities::TileStatus::Unknown; TILES_HORIZONTAL * TILES_VERTICAL];
                     self.player
@@ -305,7 +305,7 @@ async fn main() {
                 .unwrap(),
         )
     } else {
-        Dungeon::generate_dungeon(&FIRST_FLOOR)
+        Dungeon::generate_dungeon(&DUNGEON_FLOORS[0])
     };
 
     let mut dunfog = Dunfog::new(&assets, dungeon);
