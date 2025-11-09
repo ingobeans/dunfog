@@ -127,7 +127,7 @@ pub const FOURTH_FLOOR: DungeonFloor = DungeonFloor {
     },
     per_room_fn: &|x: usize, y: usize, w: usize, h: usize, _, enemies| {
         for _ in 0..rand::gen_range(0, 3) {
-            let ty = [&LAVA_DOG, &ZOMBIE][rand::gen_range(0, 3)];
+            let ty = [&LAVA_DOG, &ZOMBIE][rand::gen_range(0, 2)];
             enemies.push(Enemy::new(
                 x + rand::gen_range(0, w),
                 y + rand::gen_range(0, h),
@@ -152,20 +152,10 @@ pub const FOURTH_FLOOR: DungeonFloor = DungeonFloor {
 };
 pub const FIFTH_FLOOR: DungeonFloor = DungeonFloor {
     from_file: Some(include_bytes!("../../assets/floor5.png")),
-    get_sprite: &|tile| {
-        let tile = match tile {
-            Tile::Floor | Tile::Path => (0.0, 1.0),
-            Tile::Wall => (0.0, 0.0),
-            Tile::Door => (2.0, 1.0),
-            Tile::Chest(tile_x, tile_y, _) => (*tile_x, *tile_y),
-            Tile::Detail(tile_x, tile_y) => (*tile_x, *tile_y),
-            Tile::Ore(tile_x, tile_y, _) => (*tile_x, *tile_y),
-        };
-        (tile.0, tile.1 + 10.0)
-    },
     per_room_fn: &|_: usize, _: usize, _: usize, _: usize, _, _| {},
     post_gen_fn: &|_| {},
     rooms_area: 0,
+    ..FOURTH_FLOOR
 };
 
 fn get_tile(tile: &Tile) -> (f32, f32) {

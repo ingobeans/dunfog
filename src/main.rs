@@ -59,6 +59,7 @@ struct Dunfog<'a> {
     state: GameState,
     inv_state: InventoryState,
     dead: Option<f32>,
+    win: Option<f32>,
 }
 impl<'a> Dunfog<'a> {
     fn new(assets: &'a Assets, dungeon: Dungeon) -> Self {
@@ -76,12 +77,17 @@ impl<'a> Dunfog<'a> {
             state: GameState::Idle,
             inv_state: InventoryState::Closed,
             dead: None,
+            win: None,
         }
     }
     fn die(&mut self) {
         self.dead = Some(0.0);
         self.inv_state = InventoryState::Closed;
         self.state = GameState::Idle;
+    }
+    fn win(&mut self) {
+        self.die();
+        self.win = Some(0.0);
     }
     fn perform_enemy_actions(&mut self) {
         let mut buffer = Vec::new();
@@ -168,6 +174,9 @@ impl<'a> Dunfog<'a> {
     fn update(&mut self) {
         if self.player.health <= 0.0 && self.dead.is_none() {
             self.die();
+        }
+        if self.dungeon.enemies.is_empty() && self.floor >= 4 && self.win.is_none() {
+            self.win();
         }
         let (actual_screen_width, actual_screen_height) = screen_size();
         let scale_factor =
@@ -419,7 +428,10 @@ impl<'a> Dunfog<'a> {
             self.assets,
             &self.dungeon,
         );
-        if let Some(dead_time) = &mut self.dead {
+        if let Some(win_time) = &mut self.win {
+            *win_time += delta_time;
+            ui::draw_win_screen(*win_time, self.assets);
+        } else if let Some(dead_time) = &mut self.dead {
             *dead_time += delta_time;
             if ui::draw_dead_screen(*dead_time, self.assets, &self.player, self.floor) {
                 *self = Self::new(self.assets, Dungeon::generate_dungeon(&DUNGEON_FLOORS[0]))

@@ -15,6 +15,7 @@ pub struct Assets {
     pub ctx_menu: Texture2D,
     pub gravestone: Texture2D,
     pub tooltip: Texture2D,
+    pub win_screen: Texture2D,
 }
 impl Default for Assets {
     fn default() -> Self {
@@ -39,6 +40,7 @@ impl Default for Assets {
             hp: load_ase_texture(include_bytes!("../assets/hp.ase"), None),
             hover_card: load_ase_texture(include_bytes!("../assets/hover_card.ase"), None),
             ctx_menu: load_ase_texture(include_bytes!("../assets/ctx_menu.ase"), None),
+            win_screen: load_ase_texture(include_bytes!("../assets/win_screen.ase"), None),
             font: load_ttf_font_from_bytes(include_bytes!("../assets/novem.ttf")).unwrap(),
         }
     }

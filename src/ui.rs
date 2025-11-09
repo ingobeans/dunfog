@@ -144,6 +144,61 @@ pub fn draw_item_hover_info(
         },
     );
 }
+pub fn draw_win_screen(mut win_time: f32, assets: &Assets) {
+    let (actual_screen_width, actual_screen_height) = screen_size();
+    let scale_factor = (actual_screen_width / SCREEN_WIDTH)
+        .min(actual_screen_height / SCREEN_HEIGHT)
+        .floor()
+        .max(1.0);
+    win_time = win_time.min(1.0);
+    draw_rectangle(
+        0.0,
+        0.0,
+        actual_screen_width,
+        actual_screen_height * win_time,
+        Color::from_hex(0x2ce8f5),
+    );
+    if win_time >= 1.0 {
+        let x = (actual_screen_width - assets.win_screen.width() * scale_factor) / 2.0;
+        let y = (actual_screen_height - assets.win_screen.height() * scale_factor) / 2.0;
+        draw_texture_ex(
+            &assets.win_screen,
+            x,
+            y,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(
+                    assets.win_screen.width() * scale_factor,
+                    assets.win_screen.height() * scale_factor,
+                )),
+                ..Default::default()
+            },
+        );
+        draw_text_ex(
+            &"Thanks for playing!",
+            x - 30.0 * scale_factor,
+            (6.0 + 12.0) * scale_factor,
+            TextParams {
+                color: WHITE,
+                font: Some(&assets.font),
+                font_size: (scale_factor * 16.0) as u16,
+                ..Default::default()
+            },
+        );
+        draw_multiline_text_ex(
+            &"VICTORY!\nYou won!",
+            x + 22.0 * scale_factor,
+            y + 6.0 * scale_factor + 29.0 * scale_factor,
+            None,
+            TextParams {
+                color: WHITE,
+                font: Some(&assets.font),
+                font_size: (scale_factor * 8.0) as u16,
+                ..Default::default()
+            },
+        );
+    }
+}
 pub fn draw_dead_screen(
     mut dead_time: f32,
     assets: &Assets,
