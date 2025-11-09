@@ -2,6 +2,7 @@ use crate::{
     Tile,
     dungeon::{Dungeon, DungeonFloor},
     entities::*,
+    items::*,
     loot::BUSH_LOOT,
     utils::*,
 };
@@ -22,10 +23,20 @@ pub const FIRST_FLOOR: DungeonFloor = DungeonFloor {
     post_gen_fn: &|dungeon| {
         place_random_door(dungeon);
 
-        // generate vein of bushes
-        let i = get_random_walkable(&dungeon.tiles).0;
-        for (x, y) in drunkards_walk(dungeon, (i % TILES_HORIZONTAL, i / TILES_HORIZONTAL), 5) {
-            dungeon.tiles[x + y * TILES_HORIZONTAL] = Tile::Chest(3.0, 1.0, &BUSH_LOOT);
+        // generate veins of bushes
+        for _ in 0..2 {
+            let i = get_random_walkable(&dungeon.tiles).0;
+            for (x, y) in drunkards_walk(dungeon, (i % TILES_HORIZONTAL, i / TILES_HORIZONTAL), 5) {
+                dungeon.tiles[x + y * TILES_HORIZONTAL] = Tile::Chest(3.0, 1.0, &BUSH_LOOT);
+            }
+        }
+
+        let walkables = get_walkables(&dungeon.tiles);
+        // place rocks
+        for _ in 0..rand::gen_range(3, 6) {
+            let i = walkables[rand::gen_range(0, walkables.len())].0;
+            let (x, y) = (i % TILES_HORIZONTAL, i / TILES_HORIZONTAL);
+            dungeon.items.push((x, y, Item::Misc(&STONE)));
         }
     },
 };
