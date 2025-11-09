@@ -248,19 +248,23 @@ impl<'a> Dunfog<'a> {
                 actual_screen_width / scale_factor,
                 actual_screen_height / scale_factor,
             );
-            let camera_world = self.player.camera_pos + screen / 2.0;
+            let camera_world = self.player.camera_pos + screen / 2.0 / self.player.camera_zoom;
             let delta = camera_world - pos;
             if delta.x > max_dist && dir.x < 0.0 {
-                self.player.camera_pos.x = max_dist + pos.x - screen.x / 2.0;
+                self.player.camera_pos.x =
+                    max_dist + pos.x - screen.x / 2.0 / self.player.camera_zoom;
             }
             if delta.x < -max_dist && dir.x > 0.0 {
-                self.player.camera_pos.x = -max_dist + pos.x - screen.x / 2.0;
+                self.player.camera_pos.x =
+                    -max_dist + pos.x - screen.x / 2.0 / self.player.camera_zoom;
             }
             if delta.y > max_dist && dir.y < 0.0 {
-                self.player.camera_pos.y = max_dist + pos.y - screen.y / 2.0;
+                self.player.camera_pos.y =
+                    max_dist + pos.y - screen.y / 2.0 / self.player.camera_zoom;
             }
             if delta.y < -max_dist && dir.y > 0.0 {
-                self.player.camera_pos.y = -max_dist + pos.y - screen.y / 2.0;
+                self.player.camera_pos.y =
+                    -max_dist + pos.y - screen.y / 2.0 / self.player.camera_zoom;
             }
         }
 
