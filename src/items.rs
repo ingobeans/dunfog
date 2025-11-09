@@ -116,6 +116,12 @@ pub const STICK: MiscItem = MiscItem {
     name: "stick",
     desc: "a cool stick",
 };
+pub const BONE: MiscItem = MiscItem {
+    sprite_x: 3.0,
+    sprite_y: 2.0,
+    name: "bone",
+    desc: "a real bone",
+};
 pub const STONE: MiscItem = MiscItem {
     sprite_x: 1.0,
     sprite_y: 2.0,

@@ -1,7 +1,12 @@
-use std::f32::consts::PI;
+use std::{f32::consts::PI, sync::LazyLock};
 
 use crate::{
-    GameState, Tile, assets, dungeon::Dungeon, items::*, particles::ProjectileParticle, utils::*,
+    GameState, Tile, assets,
+    dungeon::Dungeon,
+    items::*,
+    loot::{LootTable, SKELETON_DROPS},
+    particles::ProjectileParticle,
+    utils::*,
 };
 use macroquad::prelude::*;
 
@@ -277,7 +282,18 @@ impl Player {
                     None
                 }
                 Tile::Door => Some(PlayerAction::GotoNextDungeon),
-                _ => None,
+                _ => {
+                    if let Some(item) = dungeon
+                        .items
+                        .iter()
+                        .position(|(x, y, _)| (x, y) == (&self.x, &self.y))
+                        && let Some(slot) = self.get_free_slot()
+                    {
+                        let (_, _, item) = dungeon.items.remove(item);
+                        self.inventory[slot] = Some(item);
+                    }
+                    None
+                }
             };
         }
 
@@ -299,6 +315,7 @@ pub enum MovementType {
 }
 
 pub struct EnemyType {
+    pub death_drops: Option<&'static LootTable>,
     pub sprite_x: f32,
     pub sprite_y: f32,
     pub max_health: f32,
@@ -308,6 +325,7 @@ pub struct EnemyType {
 }
 
 pub static ZOMBIE: EnemyType = EnemyType {
+    death_drops: None,
     sprite_x: 0.0,
     sprite_y: 3.0,
     max_health: 10.0,
@@ -315,15 +333,17 @@ pub static ZOMBIE: EnemyType = EnemyType {
     weapon: &MELEE,
     show_held_item: false,
 };
-pub static SKELETON: EnemyType = EnemyType {
+pub static SKELETON: LazyLock<EnemyType> = LazyLock::new(|| EnemyType {
+    death_drops: Some(&SKELETON_DROPS),
     sprite_x: 0.0,
     sprite_y: 5.0,
     max_health: 10.0,
     movement_type: MovementType::AlwaysChase,
     weapon: &BOW,
     show_held_item: false,
-};
+});
 pub static SPIDER: EnemyType = EnemyType {
+    death_drops: None,
     sprite_x: 0.0,
     sprite_y: 4.0,
     max_health: 6.0,

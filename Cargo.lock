@@ -130,7 +130,7 @@ dependencies = [
 
 [[package]]
 name = "dunfog"
-version = "0.1.62"
+version = "0.1.63"
 dependencies = [
  "asefile",
  "image",

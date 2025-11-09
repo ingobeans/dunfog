@@ -12,6 +12,17 @@ pub static BUSH_LOOT: LazyLock<LootTable> = LazyLock::new(|| {
         ],
     }
 });
+pub static SKELETON_DROPS: LazyLock<LootTable> = LazyLock::new(|| {
+    LootTable {
+        //
+        entries: vec![
+            (1.0, LootEntry::Item(Item::Misc(&STICK))),
+            (1.0, LootEntry::Item(Item::Misc(&BONE))),
+            (0.1, LootEntry::Item(Item::Weapon(&BOW))),
+            (1.0, LootEntry::None),
+        ],
+    }
+});
 
 #[expect(dead_code)]
 enum LootEntry {

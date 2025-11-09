@@ -268,7 +268,15 @@ impl<'a> Dunfog<'a> {
         }
 
         let time = get_time();
-        self.dungeon.enemies.retain(|f| f.health > 0.0);
+        let dead = self.dungeon.enemies.extract_if(.., |f| f.health <= 0.0);
+        for enemy in dead {
+            if let Some(loot_table) = enemy.ty.death_drops {
+                if let Some(item) = loot_table.get_item() {
+                    self.dungeon.items.push((enemy.x, enemy.y, item.clone()));
+                }
+            }
+        }
+
         for enemy in self.dungeon.enemies.iter() {
             if let TileStatus::Known = self.player.tile_status[enemy.x + enemy.y * TILES_HORIZONTAL]
             {
