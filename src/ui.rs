@@ -1,7 +1,9 @@
 use macroquad::{miniquad::window::screen_size, prelude::*};
 
 use crate::{
+    Tile,
     assets::Assets,
+    dungeon::Dungeon,
     entities::Player,
     items::{Item, combine, get_combinable},
     utils::*,
@@ -30,6 +32,38 @@ impl InventoryState {
             InventoryState::ThrowingItem(_) => InventoryState::Closed,
         }
     }
+}
+pub fn draw_tooltip(text: &str, assets: &Assets) {
+    let (actual_screen_width, actual_screen_height) = screen_size();
+    let scale_factor = (actual_screen_width / SCREEN_WIDTH)
+        .min(actual_screen_height / SCREEN_HEIGHT)
+        .floor()
+        .max(1.0);
+    let x = (actual_screen_width - assets.tooltip.width() * scale_factor) / 2.0;
+    let y = actual_screen_height - assets.tooltip.height() * scale_factor - 4.0 * scale_factor;
+    draw_texture_ex(
+        &assets.tooltip,
+        x,
+        y,
+        WHITE,
+        DrawTextureParams {
+            dest_size: Some(vec2(
+                assets.tooltip.width() * scale_factor,
+                assets.tooltip.height() * scale_factor,
+            )),
+            ..Default::default()
+        },
+    );
+    draw_text_ex(
+        text,
+        x + 3.0 * scale_factor,
+        y + 9.0 * scale_factor,
+        TextParams {
+            font: Some(&assets.font),
+            font_size: (scale_factor * 8.0) as u16,
+            ..Default::default()
+        },
+    );
 }
 #[expect(dead_code)]
 pub fn ui_rect(x: f32, y: f32, w: f32, h: f32) {
@@ -185,7 +219,12 @@ pub fn draw_dead_screen(
         false
     }
 }
-pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets) {
+pub fn draw_ui(
+    state: &mut InventoryState,
+    player: &mut Player,
+    assets: &Assets,
+    dungeon: &Dungeon,
+) {
     let (actual_screen_width, actual_screen_height) = screen_size();
     let scale_factor = (actual_screen_width / SCREEN_WIDTH)
         .min(actual_screen_height / SCREEN_HEIGHT)
@@ -552,7 +591,23 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                 *state = InventoryState::Closed;
             }
         }
-        _ => {}
+        _ => match &dungeon.tiles[player.x + player.y * TILES_HORIZONTAL] {
+            Tile::Chest(_, _, _) => {
+                draw_tooltip("E: interact", assets);
+            }
+            Tile::Door => {
+                draw_tooltip("E: descend", assets);
+            }
+            _ => {
+                if dungeon
+                    .items
+                    .iter()
+                    .any(|(x, y, _)| *x == player.x && *y == player.y)
+                {
+                    draw_tooltip("E: pick up", assets);
+                }
+            }
+        },
     }
 }
 

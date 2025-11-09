@@ -14,6 +14,7 @@ pub struct Assets {
     pub font: Font,
     pub ctx_menu: Texture2D,
     pub gravestone: Texture2D,
+    pub tooltip: Texture2D,
 }
 impl Default for Assets {
     fn default() -> Self {
@@ -30,6 +31,7 @@ impl Default for Assets {
                 load_ase_texture(include_bytes!("../assets/particles.ase"), None),
                 8.0,
             ),
+            tooltip: load_ase_texture(include_bytes!("../assets/tooltip.ase"), None),
             gravestone: load_ase_texture(include_bytes!("../assets/gravestone.ase"), None),
             inventory: load_ase_texture(include_bytes!("../assets/inventory.ase"), None),
             darkness: load_ase_texture(include_bytes!("../assets/darkness.ase"), None),

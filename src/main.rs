@@ -395,7 +395,12 @@ impl<'a> Dunfog<'a> {
             },
         );
 
-        ui::draw_ui(&mut self.inv_state, &mut self.player, self.assets);
+        ui::draw_ui(
+            &mut self.inv_state,
+            &mut self.player,
+            self.assets,
+            &self.dungeon,
+        );
         if let Some(dead_time) = &mut self.dead {
             *dead_time += delta_time;
             if ui::draw_dead_screen(*dead_time, self.assets, &self.player, self.floor) {
