@@ -596,15 +596,40 @@ impl Enemy {
             .attack_range
             .contains(&((delta.length()) as usize))
         {
-            player.damage(self.ty.weapon.base_damage);
+            let hits = if delta.length() as usize <= 1 {
+                true
+            } else {
+                let pos = vec2(player.x as f32, player.y as f32);
+                let self_pos = vec2(self.x as f32, self.y as f32);
+                let delta_normalized = (pos - self_pos).normalize();
+                let mut current = self_pos;
+                let max_step = 0.15;
+                let mut hit = false;
+                loop {
+                    current += delta_normalized * max_step;
 
-            if let Some(particle) = self.ty.weapon.fires_particle {
-                dungeon.particles.push(Box::new(ProjectileParticle {
-                    sprite_x: particle.0,
-                    sprite_y: particle.1,
-                    origin: self.draw_pos + 4.0,
-                    dest: vec2(player.x as f32 * 8.0 + 4.0, player.y as f32 * 8.0 + 4.0),
-                }));
+                    let (tx, ty) = ((current.x).round() as usize, (current.y).round() as usize);
+                    if !dungeon.tiles[tx + ty * TILES_HORIZONTAL].is_walkable() {
+                        break;
+                    }
+                    if (player.x, player.y) == (tx, ty) {
+                        hit = true;
+                        break;
+                    }
+                }
+                hit
+            };
+            if hits {
+                player.damage(self.ty.weapon.base_damage);
+
+                if let Some(particle) = self.ty.weapon.fires_particle {
+                    dungeon.particles.push(Box::new(ProjectileParticle {
+                        sprite_x: particle.0,
+                        sprite_y: particle.1,
+                        origin: self.draw_pos + 4.0,
+                        dest: vec2(player.x as f32 * 8.0 + 4.0, player.y as f32 * 8.0 + 4.0),
+                    }));
+                }
             }
             return EnemyAction::Attack(delta.normalize());
         }

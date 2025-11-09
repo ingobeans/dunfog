@@ -144,6 +144,7 @@ impl<'a> Dunfog<'a> {
                         self.state = GameState::EnemyAction(ACTION_TIME);
                     } else {
                         self.state = GameState::Idle;
+                        self.dungeon.particles.clear();
                     }
                 }
             }
