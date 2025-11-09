@@ -9,6 +9,7 @@ use crate::{
 use macroquad::prelude::*;
 
 pub const FIRST_FLOOR: DungeonFloor = DungeonFloor {
+    from_file: None,
     rooms_area: 5 * 5 * 5,
     get_sprite: &get_tile,
     per_room_fn: &|x: usize, y: usize, w: usize, h: usize, _, enemies| {
@@ -21,8 +22,6 @@ pub const FIRST_FLOOR: DungeonFloor = DungeonFloor {
         }
     },
     post_gen_fn: &|dungeon| {
-        place_random_door(dungeon);
-
         // generate veins of bushes
         for _ in 0..2 {
             let i = get_random_walkable(&dungeon.tiles).0;
@@ -46,6 +45,7 @@ pub const FIRST_FLOOR: DungeonFloor = DungeonFloor {
             let (x, y) = (i % TILES_HORIZONTAL, i / TILES_HORIZONTAL);
             dungeon.items.push((x, y, Item::Misc(&STONE)));
         }
+        place_random_door(dungeon);
     },
 };
 pub const SECOND_FLOOR: DungeonFloor = DungeonFloor {
@@ -58,7 +58,6 @@ pub const SECOND_FLOOR: DungeonFloor = DungeonFloor {
         ));
     },
     post_gen_fn: &|dungeon| {
-        (FIRST_FLOOR.post_gen_fn)(dungeon);
         let mut walkables = get_walkables(&dungeon.tiles);
         let amt = rand::gen_range(0, 4);
         for _ in 0..amt {
@@ -76,6 +75,7 @@ pub const SECOND_FLOOR: DungeonFloor = DungeonFloor {
                 dungeon.tiles[x + y * TILES_HORIZONTAL] = Tile::Ore(7.0, 1.0, &IRON_LOOT);
             }
         }
+        (FIRST_FLOOR.post_gen_fn)(dungeon);
     },
     ..FIRST_FLOOR
 };
@@ -91,7 +91,6 @@ pub const THIRD_FLOOR: DungeonFloor = DungeonFloor {
         }
     },
     post_gen_fn: &|dungeon| {
-        (FIRST_FLOOR.post_gen_fn)(dungeon);
         let mut walkables = get_walkables(&dungeon.tiles);
         let amt = rand::gen_range(0, 3);
         for _ in 0..amt {
@@ -107,8 +106,63 @@ pub const THIRD_FLOOR: DungeonFloor = DungeonFloor {
         for (x, y) in drunkards_walk(dungeon, (i % TILES_HORIZONTAL, i / TILES_HORIZONTAL), 2) {
             dungeon.tiles[x + y * TILES_HORIZONTAL] = Tile::Ore(7.0, 1.0, &IRON_LOOT);
         }
+        (FIRST_FLOOR.post_gen_fn)(dungeon);
     },
     ..FIRST_FLOOR
+};
+pub const FOURTH_FLOOR: DungeonFloor = DungeonFloor {
+    get_sprite: &|tile| {
+        let tile = match tile {
+            Tile::Floor | Tile::Path => (0.0, 1.0),
+            Tile::Wall => (0.0, 0.0),
+            Tile::Door => (2.0, 1.0),
+            Tile::Chest(tile_x, tile_y, _) => (*tile_x, *tile_y),
+            Tile::Detail(tile_x, tile_y) => (*tile_x, *tile_y),
+            Tile::Ore(tile_x, tile_y, _) => (*tile_x, *tile_y),
+        };
+        (tile.0, tile.1 + 10.0)
+    },
+    per_room_fn: &|x: usize, y: usize, w: usize, h: usize, _, enemies| {
+        for _ in 0..rand::gen_range(0, 3) {
+            let ty = [&WIZARD, &LAVA_DOG, &ZOMBIE][rand::gen_range(0, 3)];
+            enemies.push(Enemy::new(
+                x + rand::gen_range(0, w),
+                y + rand::gen_range(0, h),
+                ty,
+            ));
+        }
+    },
+    post_gen_fn: &|dungeon| {
+        let mut walkables = get_walkables(&dungeon.tiles);
+        let amt = rand::gen_range(0, 5);
+        for _ in 0..amt {
+            let rng = rand::gen_range(0, walkables.len());
+            let (index, _) = walkables.remove(rng);
+            let (x, y) = (index % TILES_HORIZONTAL, index / TILES_HORIZONTAL);
+            if !dungeon.enemies.iter().any(|f| (f.x, f.y) == (x, y)) {
+                dungeon.enemies.push(Enemy::new(x, y, &LAVA_DOG));
+            }
+        }
+        (FIRST_FLOOR.post_gen_fn)(dungeon);
+    },
+    ..FIRST_FLOOR
+};
+pub const FIFTH_FLOOR: DungeonFloor = DungeonFloor {
+    from_file: Some(include_bytes!("../../assets/floor5.png")),
+    get_sprite: &|tile| {
+        let tile = match tile {
+            Tile::Floor | Tile::Path => (0.0, 1.0),
+            Tile::Wall => (0.0, 0.0),
+            Tile::Door => (2.0, 1.0),
+            Tile::Chest(tile_x, tile_y, _) => (*tile_x, *tile_y),
+            Tile::Detail(tile_x, tile_y) => (*tile_x, *tile_y),
+            Tile::Ore(tile_x, tile_y, _) => (*tile_x, *tile_y),
+        };
+        (tile.0, tile.1 + 10.0)
+    },
+    per_room_fn: &|_: usize, _: usize, _: usize, _: usize, _, _| {},
+    post_gen_fn: &|_| {},
+    rooms_area: 0,
 };
 
 fn get_tile(tile: &Tile) -> (f32, f32) {

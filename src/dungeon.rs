@@ -12,13 +12,14 @@ use floors::*;
 
 mod floors;
 
-pub const DUNGEON_FLOORS: &[DungeonFloor] = &[FIRST_FLOOR, SECOND_FLOOR, THIRD_FLOOR];
+pub const DUNGEON_FLOORS: &[DungeonFloor] = &[FIRST_FLOOR, SECOND_FLOOR, THIRD_FLOOR, FOURTH_FLOOR];
 
 type PerRoomFn = &'static dyn Fn(usize, usize, usize, usize, &mut Vec<Tile>, &mut Vec<Enemy>);
 
 type PostGenFn = &'static dyn Fn(&mut Dungeon);
 
 pub struct DungeonFloor {
+    pub from_file: Option<&'static [u8]>,
     pub rooms_area: usize,
     pub get_sprite: &'static dyn Fn(&Tile) -> (f32, f32),
     pub per_room_fn: PerRoomFn,
@@ -65,6 +66,14 @@ impl Dungeon {
                     tiles[index] = Tile::Floor;
                     enemies.push(Enemy::new(x, y, &SKELETON));
                 }
+                [200, 0, 255, _] => {
+                    tiles[index] = Tile::Floor;
+                    enemies.push(Enemy::new(x, y, &WIZARD));
+                }
+                [255, 0, 255, _] => {
+                    tiles[index] = Tile::Floor;
+                    enemies.push(Enemy::new(x, y, &WIZARD));
+                }
                 [255, 0, 100, _] => {
                     tiles[index] = Tile::Chest(5.0, 1.0, &MUSHROOM_LOOT);
                 }
@@ -86,6 +95,10 @@ impl Dungeon {
         }
     }
     pub fn generate_dungeon(dungeon_floor: &'static DungeonFloor) -> Self {
+        if let Some(bytes) = dungeon_floor.from_file {
+            let image = Image::from_file_with_format(bytes, None).unwrap();
+            return Self::load_from_file(image);
+        }
         let mut enemies = Vec::new();
         let items = Vec::new();
         let mut tiles = vec![Tile::Wall; TILES_HORIZONTAL * TILES_VERTICAL];
