@@ -11,6 +11,10 @@ pub static ITEM_COMBINATIONS: &[([Item; 2], Item)] = &[
         [Item::Misc(&FIBER), Item::Misc(&FIBER)],
         Item::Armor(&TUNIC),
     ),
+    (
+        [Item::Misc(&LEAF), Item::Misc(&FLESH)],
+        Item::Misc(&RATIONS),
+    ),
 ];
 
 pub fn combine(a: Item, b: Item) -> Item {
@@ -197,6 +201,14 @@ pub const FLESH: MiscItem = MiscItem {
     desc: "consumable flesh",
     throwable: None,
     consumable: Some((2.0, None)),
+};
+pub const RATIONS: MiscItem = MiscItem {
+    sprite_x: 7.0,
+    sprite_y: 2.0,
+    name: "rations",
+    desc: "yummy rations",
+    throwable: None,
+    consumable: Some((3.0, None)),
 };
 pub const LEAF: MiscItem = MiscItem {
     sprite_x: 4.0,
