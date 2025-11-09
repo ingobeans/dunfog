@@ -51,6 +51,10 @@ pub static ITEM_COMBINATIONS: &[([Item; 2], Item)] = &[
         [Item::Misc(&IRON_ORE), Item::Weapon(&LONGBOW)],
         Item::Weapon(&IRON_BOW),
     ),
+    (
+        [Item::Misc(&IRON_ORE), Item::Armor(&TUNIC)],
+        Item::Armor(&IRON_ARMOR),
+    ),
 ];
 
 pub fn combine(a: Item, b: Item) -> Item {

@@ -48,7 +48,7 @@ impl Default for Player {
     fn default() -> Self {
         let mut inventory = vec![None; 14];
         inventory[0] = Some(Item::Weapon(&DAGGER));
-        inventory[1] = Some(Item::Armor(&IRON_ARMOR));
+        inventory[1] = Some(Item::Armor(&TUNIC));
         inventory[2] = Some(Item::Misc(&STICK));
         inventory[3] = Some(Item::Misc(&STONE));
         Self {
