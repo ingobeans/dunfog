@@ -3,7 +3,7 @@ use crate::{
     dungeon::{Dungeon, DungeonFloor},
     entities::*,
     items::*,
-    loot::BUSH_LOOT,
+    loot::*,
     utils::*,
 };
 use macroquad::prelude::*;
@@ -28,6 +28,14 @@ pub const FIRST_FLOOR: DungeonFloor = DungeonFloor {
             let i = get_random_walkable(&dungeon.tiles).0;
             for (x, y) in drunkards_walk(dungeon, (i % TILES_HORIZONTAL, i / TILES_HORIZONTAL), 5) {
                 dungeon.tiles[x + y * TILES_HORIZONTAL] = Tile::Chest(3.0, 1.0, &BUSH_LOOT);
+            }
+        }
+
+        if rand::gen_range(0, 10) < 4 {
+            println!("mushrooms!");
+            let i = get_random_walkable(&dungeon.tiles).0;
+            for (x, y) in drunkards_walk(dungeon, (i % TILES_HORIZONTAL, i / TILES_HORIZONTAL), 3) {
+                dungeon.tiles[x + y * TILES_HORIZONTAL] = Tile::Chest(5.0, 1.0, &MUSHROOM_LOOT);
             }
         }
 

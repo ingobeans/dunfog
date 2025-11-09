@@ -13,6 +13,9 @@ pub static BUSH_LOOT: LazyLock<LootTable> = LazyLock::new(|| {
         ],
     }
 });
+pub static MUSHROOM_LOOT: LazyLock<LootTable> = LazyLock::new(|| LootTable {
+    entries: vec![(1.0, LootEntry::Item(Item::Misc(&POISON_MUSHROOM)))],
+});
 pub static SKELETON_DROPS: LazyLock<LootTable> = LazyLock::new(|| {
     LootTable {
         //

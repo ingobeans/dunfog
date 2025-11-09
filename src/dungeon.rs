@@ -4,6 +4,7 @@ use std::iter::Map;
 use crate::Tile;
 use crate::entities::*;
 use crate::items::Item;
+use crate::loot::MUSHROOM_LOOT;
 use crate::particles::Particle;
 use crate::utils::*;
 use floors::*;
@@ -61,6 +62,9 @@ impl Dungeon {
                 [220, 220, 0, _] => {
                     tiles[index] = Tile::Floor;
                     enemies.push(Enemy::new(x, y, &SKELETON));
+                }
+                [255, 0, 100, _] => {
+                    tiles[index] = Tile::Chest(5.0, 1.0, &MUSHROOM_LOOT);
                 }
 
                 _ => {}

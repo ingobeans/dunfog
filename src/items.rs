@@ -194,6 +194,14 @@ pub const FIBER: MiscItem = MiscItem {
     throwable: None,
     consumable: None,
 };
+pub const POISON_MUSHROOM: MiscItem = MiscItem {
+    sprite_x: 6.0,
+    sprite_y: 2.0,
+    name: "poisonous mushroom",
+    desc: "maybe throw on your foes?",
+    throwable: Some((0.0, vec2(4.0, 0.0))),
+    consumable: Some((0.0, None)),
+};
 #[derive(Clone, Copy, PartialEq)]
 pub enum Item {
     Weapon(&'static Weapon),

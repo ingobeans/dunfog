@@ -86,13 +86,15 @@ pub fn draw_item_hover_info(
             ..Default::default()
         }),
     );
+    let name = item.get_name().to_uppercase();
+    let long_name = name.len() > 10;
     draw_text_ex(
-        &item.get_name().to_uppercase(),
+        &name,
         x + 13.0 * scale_factor,
-        y + 10.0 * scale_factor,
+        y + 10.0 * scale_factor - (if long_name { 4.0 * scale_factor } else { 0.0 }),
         TextParams {
             font: Some(&assets.font),
-            font_size: (scale_factor * 8.0) as u16,
+            font_size: (scale_factor * (if long_name { 4.0 } else { 8.0 })) as u16,
             ..Default::default()
         },
     );
