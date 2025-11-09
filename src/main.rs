@@ -6,6 +6,7 @@ use crate::{assets::Assets, dungeon::*, entities::*, loot::LootTable, ui::Invent
 mod assets;
 mod dungeon;
 mod entities;
+mod items;
 mod loot;
 mod particles;
 mod ui;

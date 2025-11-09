@@ -2,7 +2,8 @@ use macroquad::{miniquad::window::screen_size, prelude::*};
 
 use crate::{
     assets::Assets,
-    entities::{Item, Player},
+    entities::Player,
+    items::{Item, combine, get_combinable},
     utils::*,
 };
 
@@ -13,6 +14,7 @@ pub enum InventoryAction {
     None,
     CtxMenuOpen(usize, f32, f32),
     MovingItem(usize),
+    CombiningItem(usize, Vec<usize>),
 }
 
 pub enum InventoryState {
@@ -163,24 +165,39 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                     .contains(&mouse_y)
         });
         if clicking && let Some(i) = hovered_index {
-            if let InventoryAction::MovingItem(index) = &action {
-                if item_can_go_in_slot(&player.inventory[i], *index)
-                    && item_can_go_in_slot(&player.inventory[*index], i)
-                {
-                    (player.inventory[i], player.inventory[*index]) =
-                        (player.inventory[*index], player.inventory[i]);
-                    action = &mut none_action;
-                    *state = InventoryState::Inventory(InventoryAction::None);
+            match &action {
+                InventoryAction::MovingItem(index) => {
+                    if item_can_go_in_slot(&player.inventory[i], *index)
+                        && item_can_go_in_slot(&player.inventory[*index], i)
+                    {
+                        (player.inventory[i], player.inventory[*index]) =
+                            (player.inventory[*index], player.inventory[i]);
+                        action = &mut none_action;
+                        *state = InventoryState::Inventory(InventoryAction::None);
+                    }
                 }
-            } else if let InventoryAction::None = &action
-                && player.inventory[i].is_some()
-            {
-                action = &mut none_action;
-                *state = InventoryState::Inventory(InventoryAction::CtxMenuOpen(
-                    i,
-                    mouse_x - assets.ctx_menu.width() * scale_factor + 2.0 * scale_factor,
-                    mouse_y - assets.ctx_menu.height() * scale_factor + 2.0 * scale_factor,
-                ));
+                InventoryAction::CombiningItem(index, combinables) => {
+                    if combinables.contains(&i) {
+                        let new = combine(
+                            player.inventory[*index].take().unwrap(),
+                            player.inventory[i].take().unwrap(),
+                        );
+                        player.inventory[i] = Some(new);
+                        action = &mut none_action;
+                        *state = InventoryState::Inventory(InventoryAction::None);
+                    }
+                }
+                InventoryAction::None => {
+                    if player.inventory[i].is_some() {
+                        action = &mut none_action;
+                        *state = InventoryState::Inventory(InventoryAction::CtxMenuOpen(
+                            i,
+                            mouse_x - assets.ctx_menu.width() * scale_factor + 2.0 * scale_factor,
+                            mouse_y - assets.ctx_menu.height() * scale_factor + 2.0 * scale_factor,
+                        ));
+                    }
+                }
+                _ => {}
             }
         }
 
@@ -244,6 +261,11 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
             {
                 continue;
             }
+            if let InventoryAction::CombiningItem(moving_index, _) = action
+                && i == *moving_index
+            {
+                continue;
+            }
             if let Some(item) = slot {
                 let sprite = item.get_sprite();
                 assets.items.draw_tile(
@@ -259,8 +281,13 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
             }
         }
 
-        if let InventoryAction::MovingItem(index) = &action {
-            let item = &player.inventory[*index].unwrap();
+        let cursor_item = match &action {
+            InventoryAction::MovingItem(index) => Some(index),
+            InventoryAction::CombiningItem(index, _) => Some(index),
+            _ => None,
+        };
+        if let Some(cursor_item) = cursor_item {
+            let item = &player.inventory[*cursor_item].unwrap();
             let sprite = item.get_sprite();
             assets.items.draw_tile(
                 mouse_x - 4.0 * scale_factor,
@@ -297,6 +324,9 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
             let player_first_free = player.inventory[0].is_none();
             let player_second_free = player.inventory[1].is_none();
             let item_index = *item_index;
+
+            let combinable = get_combinable(&player.inventory, item_index);
+            let has_combinable = !combinable.is_empty();
 
             let buttons: [CtxMenuButton; 5] = [
                 ("Move", &|_| true, &|state, _| {
@@ -342,7 +372,12 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                     },
                 ),
                 // todo: add these
-                ("Combine", &|_| true, &|_, _| {}),
+                ("Combine", &|_| has_combinable, &|state, _| {
+                    *state = InventoryState::Inventory(InventoryAction::CombiningItem(
+                        item_index,
+                        combinable.clone(),
+                    ));
+                }),
                 ("Throw", &|_| true, &|_, _| {}),
                 ("Trash", &|_| true, &|_, player| {
                     player.inventory[item_index] = None;

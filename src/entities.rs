@@ -1,6 +1,8 @@
 use std::f32::consts::PI;
 
-use crate::{GameState, Tile, assets, dungeon::Dungeon, particles::ProjectileParticle, utils::*};
+use crate::{
+    GameState, Tile, assets, dungeon::Dungeon, items::*, particles::ProjectileParticle, utils::*,
+};
 use macroquad::prelude::*;
 
 pub enum PlayerAction {
@@ -20,116 +22,6 @@ impl TileStatus {
         matches!(self, TileStatus::Unknown)
     }
 }
-#[derive(Clone)]
-pub struct Armor {
-    pub block_chance: f32,
-    pub sprite_x: f32,
-    pub sprite_y: f32,
-    pub name: &'static str,
-}
-impl Armor {
-    fn get_desc(&self) -> String {
-        format!("Block Chance: {}", self.block_chance)
-    }
-}
-#[derive(Clone)]
-pub struct Weapon {
-    pub attack_range: std::ops::Range<usize>,
-    pub base_damage: f32,
-    pub sprite_x: f32,
-    pub sprite_y: f32,
-    pub name: &'static str,
-    pub fires_particle: Option<(f32, f32)>,
-}
-impl Weapon {
-    fn get_desc(&self) -> String {
-        format!(
-            "DMG: {}\nRANGE: {}",
-            self.base_damage,
-            serialize_range(&self.attack_range)
-        )
-    }
-}
-pub const MELEE: Weapon = Weapon {
-    attack_range: 1..2,
-    base_damage: 1.0,
-    sprite_x: 0.0,
-    sprite_y: 0.0,
-    name: "melee",
-    fires_particle: None,
-};
-pub const DAGGER: Weapon = Weapon {
-    attack_range: 1..2,
-    base_damage: 2.0,
-    sprite_x: 1.0,
-    sprite_y: 0.0,
-    name: "dagger",
-    fires_particle: None,
-};
-pub const BOW: Weapon = Weapon {
-    attack_range: 2..4,
-    base_damage: 2.0,
-    sprite_x: 2.0,
-    sprite_y: 0.0,
-    name: "bow",
-    fires_particle: Some((0.0, 0.0)),
-};
-pub const IRON_ARMOR: Armor = Armor {
-    block_chance: 0.4,
-    sprite_x: 0.0,
-    sprite_y: 1.0,
-    name: "iron armor",
-};
-pub struct MiscItem {
-    sprite_x: f32,
-    sprite_y: f32,
-    name: &'static str,
-    desc: &'static str,
-}
-pub const STICK: MiscItem = MiscItem {
-    sprite_x: 0.0,
-    sprite_y: 2.0,
-    name: "stick",
-    desc: "a cool stick",
-};
-#[derive(Clone, Copy)]
-pub enum Item {
-    Weapon(&'static Weapon),
-    Armor(&'static Armor),
-    Misc(&'static MiscItem),
-}
-impl Item {
-    pub fn get_sprite(&self) -> Vec2 {
-        match &self {
-            Item::Weapon(weapon) => vec2(weapon.sprite_x, weapon.sprite_y),
-            Item::Armor(armor) => vec2(armor.sprite_x, armor.sprite_y),
-            Item::Misc(misc_item) => vec2(misc_item.sprite_x, misc_item.sprite_y),
-        }
-    }
-    pub fn get_name(&self) -> &'static str {
-        match &self {
-            Item::Weapon(weapon) => weapon.name,
-            Item::Armor(armor) => armor.name,
-            Item::Misc(misc_item) => misc_item.name,
-        }
-    }
-    pub fn get_desc(&self) -> String {
-        match &self {
-            Item::Weapon(weapon) => weapon.get_desc(),
-            Item::Armor(armor) => armor.get_desc(),
-            Item::Misc(misc_item) => misc_item.desc.to_string(),
-        }
-    }
-    // fn unwrap_weapon(&self) -> &'static Weapon {
-    //     match &self {
-    //         Item::Weapon(weapon) => &weapon,
-    //         _ => {
-    //             panic!()
-    //         }
-    //     }
-    // }
-}
-
 pub struct Player {
     pub active_action: Option<PlayerAction>,
     pub moving_to: Vec<(usize, usize)>,
@@ -148,6 +40,8 @@ impl Default for Player {
         let mut inventory = vec![None; 14];
         inventory[0] = Some(Item::Weapon(&DAGGER));
         inventory[1] = Some(Item::Armor(&IRON_ARMOR));
+        inventory[2] = Some(Item::Misc(&STICK));
+        inventory[3] = Some(Item::Misc(&STONE));
         Self {
             active_action: None,
             moving_to: Vec::new(),

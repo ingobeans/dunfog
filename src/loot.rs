@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use crate::entities::*;
+use crate::items::*;
 use macroquad::prelude::*;
 
 pub static BUSH_LOOT: LazyLock<LootTable> = LazyLock::new(|| {
@@ -58,7 +58,7 @@ mod tests {
     };
 
     use crate::{
-        entities::{BOW, DAGGER, Item, MELEE},
+        items::*,
         loot::{LootEntry, weighted_choice},
     };
 
