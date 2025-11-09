@@ -1,11 +1,7 @@
 use std::{f32::consts::PI, sync::LazyLock};
 
 use crate::{
-    GameState, Tile, assets,
-    dungeon::Dungeon,
-    items::*,
-    loot::{LootTable, SKELETON_DROPS},
-    particles::ProjectileParticle,
+    GameState, Tile, assets, dungeon::Dungeon, items::*, loot::*, particles::ProjectileParticle,
     utils::*,
 };
 use macroquad::prelude::*;
@@ -69,6 +65,15 @@ impl Default for Player {
     }
 }
 impl Player {
+    pub fn consume(&mut self, index: usize) {
+        if let Some(Item::Misc(item)) = self.inventory[index].take()
+            && let Some((heal, _effect)) = &item.consumable
+        {
+            self.health = (self.health + heal).min(MAX_PLAYER_HP);
+        } else {
+            panic!("invalid consumable");
+        }
+    }
     pub fn damage(&mut self, amt: f32) {
         let rng = rand::gen_range(0.0, 1.0);
         if self.inventory[1].is_none_or(|f| {
@@ -379,16 +384,16 @@ pub struct EnemyType {
     pub show_held_item: bool,
 }
 
-pub static ZOMBIE: EnemyType = EnemyType {
+pub static ZOMBIE: LazyLock<EnemyType> = LazyLock::new(|| EnemyType {
     block_chance: 0.1,
-    death_drops: None,
+    death_drops: Some(&ZOMBIE_DROPS),
     sprite_x: 0.0,
     sprite_y: 3.0,
     max_health: 10.0,
     movement_type: MovementType::ChaseWhenVisible,
     weapon: &MELEE,
     show_held_item: false,
-};
+});
 pub static SKELETON: LazyLock<EnemyType> = LazyLock::new(|| EnemyType {
     block_chance: 0.1,
     death_drops: Some(&SKELETON_DROPS),

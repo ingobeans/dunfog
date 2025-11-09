@@ -24,6 +24,15 @@ pub static SKELETON_DROPS: LazyLock<LootTable> = LazyLock::new(|| {
         ],
     }
 });
+pub static ZOMBIE_DROPS: LazyLock<LootTable> = LazyLock::new(|| {
+    LootTable {
+        //
+        entries: vec![
+            (3.0, LootEntry::Item(Item::Misc(&FLESH))),
+            (1.0, LootEntry::None),
+        ],
+    }
+});
 
 #[expect(dead_code)]
 enum LootEntry {

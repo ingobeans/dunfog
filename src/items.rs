@@ -144,7 +144,7 @@ pub struct MiscItem {
     name: &'static str,
     desc: &'static str,
     throwable: Option<(f32, Vec2)>,
-    consumable: Option<(f32, Option<StatusEffect>)>,
+    pub consumable: Option<(f32, Option<StatusEffect>)>,
 }
 pub const STICK: MiscItem = MiscItem {
     sprite_x: 0.0,
@@ -176,7 +176,7 @@ pub const FLESH: MiscItem = MiscItem {
     name: "flesh",
     desc: "consumable flesh",
     throwable: None,
-    consumable: None,
+    consumable: Some((2.0, None)),
 };
 pub const LEAF: MiscItem = MiscItem {
     sprite_x: 4.0,

@@ -420,7 +420,7 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                 let combinable = get_combinable(&player.inventory, item_index);
                 let has_combinable = !combinable.is_empty();
 
-                let buttons: [CtxMenuButton; 5] = [
+                let mut buttons: [CtxMenuButton; 5] = [
                     ("Move", &|_| true, &|state, _| {
                         *state = InventoryState::Inventory(InventoryAction::MovingItem(item_index))
                     }),
@@ -477,6 +477,14 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                         player.should_drop_item = Some(item_index);
                     }),
                 ];
+                let consume_button: CtxMenuButton = ("Consume", &|_| true, &|_, player| {
+                    player.consume(item_index);
+                });
+                if let Item::Misc(item) = &player.inventory[item_index].unwrap()
+                    && item.consumable.is_some()
+                {
+                    buttons[1] = consume_button;
+                }
                 let mut any_clicked = false;
                 for (index, (mut text, cond, on_click)) in buttons.into_iter().enumerate() {
                     let x = *mx + 2.0 * scale_factor;
