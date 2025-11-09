@@ -54,6 +54,7 @@ struct Dunfog<'a> {
     world_camera: Camera2D,
     state: GameState,
     inv_state: InventoryState,
+    dead: Option<f32>,
 }
 impl<'a> Dunfog<'a> {
     fn new(assets: &'a Assets, dungeon: Dungeon) -> Self {
@@ -70,7 +71,13 @@ impl<'a> Dunfog<'a> {
             world_camera,
             state: GameState::Idle,
             inv_state: InventoryState::Closed,
+            dead: None,
         }
+    }
+    fn die(&mut self) {
+        self.dead = Some(0.0);
+        self.inv_state = InventoryState::Closed;
+        self.state = GameState::Idle;
     }
     fn perform_enemy_actions(&mut self) {
         let mut buffer = Vec::new();
@@ -136,6 +143,9 @@ impl<'a> Dunfog<'a> {
         }
     }
     fn update(&mut self) {
+        if self.player.health <= 0.0 && self.dead.is_none() {
+            self.die();
+        }
         let (actual_screen_width, actual_screen_height) = screen_size();
         let scale_factor =
             (actual_screen_width / SCREEN_WIDTH).min(actual_screen_height / SCREEN_HEIGHT);
@@ -158,7 +168,7 @@ impl<'a> Dunfog<'a> {
         let mouse_delta = mouse_delta_position();
         let scroll = mouse_wheel();
 
-        if is_mouse_button_down(MouseButton::Middle) {
+        if is_mouse_button_down(MouseButton::Middle) && self.dead.is_none() {
             self.player.camera_pos.x += mouse_delta.x as f32 * actual_screen_width
                 / scale_factor
                 / 2.
@@ -168,7 +178,7 @@ impl<'a> Dunfog<'a> {
                 / 2.
                 / self.player.camera_zoom;
         }
-        if scroll.1 != 0.0 {
+        if scroll.1 != 0.0 && self.dead.is_none() {
             let amt = if scroll.1 > 0.0 {
                 1.0 / SCROLL_AMT
             } else {
@@ -190,6 +200,7 @@ impl<'a> Dunfog<'a> {
             self.player.camera_pos.y =
                 old_mouse_world_y + SCREEN_HEIGHT / 2.0 - mouse_y / self.player.camera_zoom;
         }
+
         let cursor_tile = if mouse_tile_x >= 0.0
             && mouse_tile_y >= 0.0
             && mouse_tile_x < TILES_HORIZONTAL as f32
@@ -233,7 +244,7 @@ impl<'a> Dunfog<'a> {
             click = Some(cursor_tile)
         }
 
-        if matches!(self.inv_state, InventoryState::Closed) {
+        if matches!(self.inv_state, InventoryState::Closed) && self.dead.is_none() {
             self.update_gamestate(delta_time);
             if let Some(action) =
                 self.player
@@ -299,6 +310,7 @@ impl<'a> Dunfog<'a> {
         let time = get_time();
         let dead = self.dungeon.enemies.extract_if(.., |f| f.health <= 0.0);
         for enemy in dead {
+            self.player.enemies_slayed += 1;
             if let Some(loot_table) = enemy.ty.death_drops {
                 if let Some(item) = loot_table.get_item() {
                     self.dungeon.items.push((enemy.x, enemy.y, item.clone()));
@@ -356,6 +368,12 @@ impl<'a> Dunfog<'a> {
         );
 
         ui::draw_ui(&mut self.inv_state, &mut self.player, self.assets);
+        if let Some(dead_time) = &mut self.dead {
+            *dead_time += delta_time;
+            if ui::draw_dead_screen(*dead_time, self.assets, &self.player, self.floor) {
+                *self = Self::new(self.assets, Dungeon::generate_dungeon(&DUNGEON_FLOORS[0]))
+            }
+        }
     }
 }
 

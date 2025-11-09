@@ -108,6 +108,81 @@ pub fn draw_item_hover_info(
         },
     );
 }
+pub fn draw_dead_screen(
+    mut dead_time: f32,
+    assets: &Assets,
+    player: &Player,
+    floor: usize,
+) -> bool {
+    let (actual_screen_width, actual_screen_height) = screen_size();
+    let scale_factor = (actual_screen_width / SCREEN_WIDTH)
+        .min(actual_screen_height / SCREEN_HEIGHT)
+        .floor()
+        .max(1.0);
+    let (mouse_x, mouse_y) = mouse_position();
+    dead_time = dead_time.min(1.0);
+    draw_rectangle(
+        0.0,
+        0.0,
+        actual_screen_width,
+        actual_screen_height * dead_time,
+        BLACK,
+    );
+    if dead_time >= 1.0 {
+        let x = (actual_screen_width - assets.gravestone.width() * scale_factor) / 2.0;
+        let y = (actual_screen_height - assets.gravestone.height() * scale_factor) / 2.0;
+        draw_texture_ex(
+            &assets.gravestone,
+            x,
+            y,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(
+                    assets.gravestone.width() * scale_factor,
+                    assets.gravestone.height() * scale_factor,
+                )),
+                ..Default::default()
+            },
+        );
+        draw_multiline_text_ex(
+            &format!(
+                "Died at floor: {floor}\nEnemies slayn: {}",
+                player.enemies_slayed
+            ),
+            x + 11.0 * scale_factor,
+            y + 6.0 * scale_factor + 38.0 * scale_factor,
+            None,
+            TextParams {
+                color: BLACK,
+                font: Some(&assets.font),
+                font_size: (scale_factor * 6.0) as u16,
+                ..Default::default()
+            },
+        );
+        let button_x = x + 25.0 * scale_factor;
+        let button_y = y + 73.0 * scale_factor;
+        let hovered = (button_x..button_x + 25.0 * scale_factor).contains(&mouse_x)
+            && (button_y..button_y + 12.0 * scale_factor).contains(&mouse_y);
+
+        let color = if hovered { GOLD } else { BLACK };
+
+        draw_text_ex(
+            "Restart",
+            button_x,
+            button_y + 6.0 * scale_factor,
+            TextParams {
+                color,
+                font: Some(&assets.font),
+                font_size: (scale_factor * 6.0) as u16,
+                ..Default::default()
+            },
+        );
+
+        is_mouse_button_pressed(MouseButton::Left) && hovered
+    } else {
+        false
+    }
+}
 pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets) {
     let (actual_screen_width, actual_screen_height) = screen_size();
     let scale_factor = (actual_screen_width / SCREEN_WIDTH)
