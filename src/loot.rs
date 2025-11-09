@@ -7,14 +7,15 @@ pub static BUSH_LOOT: LazyLock<LootTable> = LazyLock::new(|| {
     LootTable {
         //
         entries: vec![
-            //
-            (0.2, LootEntry::Item(Item::Misc(&STICK))),
+            (1.0, LootEntry::Item(Item::Misc(&STICK))),
+            (1.0, LootEntry::None),
         ],
     }
 });
 
 #[expect(dead_code)]
 enum LootEntry {
+    None,
     Item(Item),
     LootEntry(&'static LootTable),
 }
@@ -41,10 +42,11 @@ pub struct LootTable {
     entries: Vec<(f32, LootEntry)>,
 }
 impl LootTable {
-    pub fn get_item(&self) -> &Item {
+    pub fn get_item(&self) -> Option<&Item> {
         let result = weighted_choice(&self.entries);
         match result {
-            LootEntry::Item(item) => item,
+            LootEntry::None => None,
+            LootEntry::Item(item) => Some(item),
             LootEntry::LootEntry(table) => table.get_item(),
         }
     }

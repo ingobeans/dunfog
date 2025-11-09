@@ -265,11 +265,12 @@ impl Player {
                     let mut buffer = Tile::Detail(*sprite_x + 1.0, *sprite_y);
                     std::mem::swap(&mut buffer, tile);
                     if let Tile::Chest(_, _, loot) = buffer {
-                        let item = *loot.get_item();
-                        if let Some(slot) = self.get_free_slot() {
-                            self.inventory[slot] = Some(item);
-                        } else {
-                            dungeon.items.push((self.x, self.y, item));
+                        if let Some(item) = loot.get_item() {
+                            if let Some(slot) = self.get_free_slot() {
+                                self.inventory[slot] = Some(*item);
+                            } else {
+                                dungeon.items.push((self.x, self.y, *item));
+                            }
                         }
                     }
 
