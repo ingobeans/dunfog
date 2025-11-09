@@ -164,10 +164,14 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
         });
         if clicking && let Some(i) = hovered_index {
             if let InventoryAction::MovingItem(index) = &action {
-                (player.inventory[i], player.inventory[*index]) =
-                    (player.inventory[*index], player.inventory[i]);
-                action = &mut none_action;
-                *state = InventoryState::Inventory(InventoryAction::None);
+                if item_can_go_in_slot(&player.inventory[i], *index)
+                    && item_can_go_in_slot(&player.inventory[*index], i)
+                {
+                    (player.inventory[i], player.inventory[*index]) =
+                        (player.inventory[*index], player.inventory[i]);
+                    action = &mut none_action;
+                    *state = InventoryState::Inventory(InventoryAction::None);
+                }
             } else if let InventoryAction::None = &action
                 && player.inventory[i].is_some()
             {
@@ -279,6 +283,7 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
             );
             let player_free_slot = player.get_free_slot();
             let player_first_free = player.inventory[0].is_none();
+            let player_second_free = player.inventory[1].is_none();
             let item_index = *item_index;
 
             let buttons: [CtxMenuButton; 5] = [
@@ -287,16 +292,30 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                 }),
                 (
                     "Equip",
-                    &|item| {
-                        matches!(item, Item::Weapon(_))
-                            && if item_index <= 1 {
+                    &|item| match item {
+                        Item::Weapon(_) => {
+                            if item_index == 0 {
                                 player_free_slot.is_some()
                             } else {
                                 player_first_free
                             }
+                        }
+                        Item::Armor(_) => {
+                            if item_index == 1 {
+                                player_free_slot.is_some()
+                            } else {
+                                player_second_free
+                            }
+                        }
+                        _ => false,
                     },
                     &|_, player| {
-                        if item_index <= 1 {
+                        let target_index = match player.inventory[item_index].unwrap() {
+                            Item::Weapon(_) => 0,
+                            Item::Armor(_) => 1,
+                            _ => panic!(),
+                        };
+                        if item_index == target_index {
                             (
                                 player.inventory[item_index],
                                 player.inventory[player_free_slot.unwrap()],
@@ -305,8 +324,8 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                                 player.inventory[item_index],
                             );
                         } else {
-                            (player.inventory[item_index], player.inventory[0]) =
-                                (player.inventory[0], player.inventory[item_index]);
+                            (player.inventory[item_index], player.inventory[target_index]) =
+                                (player.inventory[target_index], player.inventory[item_index]);
                         }
                     },
                 ),
@@ -344,7 +363,7 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                         ..Default::default()
                     },
                 );
-                if hovered && clicking {
+                if !disabled && hovered && clicking {
                     any_clicked = true;
                     *state = InventoryState::Inventory(InventoryAction::None);
                     on_click(state, player);
@@ -355,6 +374,17 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                 *state = InventoryState::Inventory(InventoryAction::None);
             }
         }
+    }
+}
+
+fn item_can_go_in_slot(item: &Option<Item>, slot: usize) -> bool {
+    match item {
+        Some(item) => match item {
+            Item::Armor(_) => slot >= 1,
+            Item::Weapon(_) => slot == 0 || slot > 1,
+            Item::Misc(_) => slot > 1,
+        },
+        None => true,
     }
 }
 

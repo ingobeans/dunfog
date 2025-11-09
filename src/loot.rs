@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use crate::entities::{DAGGER, Item};
+use crate::entities::*;
 use macroquad::prelude::*;
 
 pub static BUSH_LOOT: LazyLock<LootTable> = LazyLock::new(|| {
@@ -8,7 +8,7 @@ pub static BUSH_LOOT: LazyLock<LootTable> = LazyLock::new(|| {
         //
         entries: vec![
             //
-            (0.2, LootEntry::Item(Item::Weapon(&DAGGER))),
+            (0.2, LootEntry::Item(Item::Misc(&STICK))),
         ],
     }
 });
