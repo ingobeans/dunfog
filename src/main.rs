@@ -1,7 +1,7 @@
 use macroquad::{miniquad::window::screen_size, prelude::*, rand};
 use utils::*;
 
-use crate::{assets::Assets, dungeon::*, ui::InventoryState};
+use crate::{assets::Assets, dungeon::*, entities::EnemyType, ui::InventoryState};
 
 mod assets;
 mod dungeon;
@@ -15,11 +15,15 @@ enum Tile {
     Wall,
     Path,
     Door,
+    Chest(f32, f32, entities::Item),
 }
 
 impl Tile {
     fn is_walkable(self) -> bool {
-        matches!(self, Tile::Floor | Tile::Path | Tile::Door)
+        match self {
+            Tile::Wall => false,
+            _ => true,
+        }
     }
 }
 
@@ -257,6 +261,18 @@ impl<'a> Dunfog<'a> {
                 self.player.tile_status[enemy.x + enemy.y * TILES_HORIZONTAL]
             {
                 enemy.draw(self.assets, time);
+            }
+        }
+        for (x, y, item) in self.dungeon.items.iter() {
+            if let entities::TileStatus::Known = self.player.tile_status[x + y * TILES_HORIZONTAL] {
+                let sprite = item.get_sprite();
+                self.assets.items.draw_tile(
+                    (x * 8) as f32,
+                    (y * 8) as f32,
+                    sprite.x,
+                    sprite.y,
+                    None,
+                );
             }
         }
         self.player.draw(self.assets, time);

@@ -1,4 +1,9 @@
-use crate::{Tile, dungeon::DungeonFloor, entities, utils::*};
+use crate::{
+    Tile,
+    dungeon::{Dungeon, DungeonFloor},
+    entities,
+    utils::*,
+};
 use macroquad::prelude::*;
 
 pub const FIRST_FLOOR: DungeonFloor = DungeonFloor {
@@ -11,8 +16,15 @@ pub const FIRST_FLOOR: DungeonFloor = DungeonFloor {
             &entities::ZOMBIE,
         ));
     },
-    post_gen_fn: &|(player_x, player_y), tiles, enemies| {
-        place_random_door(player_x, player_y, tiles, enemies);
+    post_gen_fn: &|dungeon| {
+        place_random_door(dungeon);
+
+        // generate vein of bushes
+        let i = get_random_walkable(&dungeon.tiles).0;
+        for (x, y) in drunkards_walk(&dungeon, (i % TILES_HORIZONTAL, i / TILES_HORIZONTAL), 5) {
+            dungeon.tiles[x + y * TILES_HORIZONTAL] =
+                Tile::Chest(3.0, 1.0, entities::Item::Weapon(&entities::DAGGER));
+        }
     },
 };
 pub const SECOND_FLOOR: DungeonFloor = DungeonFloor {
@@ -34,15 +46,69 @@ fn get_tile(tile: &Tile) -> (f32, f32) {
         Tile::Path => (1.0, 1.0),
         Tile::Wall => (0.0, 0.0),
         Tile::Door => (2.0, 1.0),
+        Tile::Chest(tile_x, tile_y, _) => (*tile_x, *tile_y),
     }
 }
-fn place_random_door(
-    player_x: usize,
-    player_y: usize,
-    tiles: &mut Vec<Tile>,
-    enemies: &mut Vec<entities::Enemy>,
-) {
-    let mut walkables: Vec<(usize, &mut Tile)> = tiles
+
+fn get_random_walkable<'a>(tiles: &'a [Tile]) -> (usize, &'a Tile) {
+    let walkables: Vec<(usize, &'a Tile)> = tiles
+        .into_iter()
+        .enumerate()
+        .filter_map(|(i, f)| {
+            if matches!(f, Tile::Floor) {
+                Some((i, f))
+            } else {
+                None
+            }
+        })
+        .collect();
+    walkables[rand::gen_range(0, walkables.len())]
+}
+
+// https://en.wikipedia.org/wiki/Random_walk
+fn drunkards_walk(
+    dungeon: &Dungeon,
+    start: (usize, usize),
+    mut tiles: usize,
+) -> Vec<(usize, usize)> {
+    let mut walked = Vec::new();
+    let (mut x, mut y) = (start.0, start.1);
+    while tiles > 0 {
+        walked.push((x, y));
+        let mut candidates = vec![];
+        if x > 0 {
+            candidates.push((x - 1, y));
+        }
+        if x < TILES_HORIZONTAL - 1 {
+            candidates.push((x + 1, y));
+        }
+        if y > 0 {
+            candidates.push((x, y - 1));
+        }
+        if y < TILES_VERTICAL - 1 {
+            candidates.push((x, y + 1));
+        }
+        // filter away non walkable tiles
+        candidates = candidates
+            .into_iter()
+            .filter(|(x, y)| {
+                dungeon.tiles[x + y * TILES_HORIZONTAL].is_walkable()
+                    && !dungeon.enemies.iter().any(|f| (f.x, f.y) == (*x, *y))
+                    && (*x, *y) != dungeon.player_spawn
+                    && !walked.contains(&(*x, *y))
+            })
+            .collect();
+        if candidates.len() == 0 {
+            break;
+        }
+        tiles -= 1;
+        (x, y) = candidates[rand::gen_range(0, candidates.len())];
+    }
+    walked
+}
+fn place_random_door(dungeon: &mut Dungeon) {
+    let mut walkables: Vec<(usize, &mut Tile)> = dungeon
+        .tiles
         .iter_mut()
         .enumerate()
         .filter_map(|(i, f)| {
@@ -53,7 +119,7 @@ fn place_random_door(
             }
         })
         .collect();
-    let player_pos = vec2(player_x as f32, player_y as f32);
+    let player_pos = vec2(dungeon.player_spawn.0 as f32, dungeon.player_spawn.1 as f32);
     let walkables_len = walkables.len();
     const DOOR_SPAWN_ATTEMPTS: u8 = 10;
     for i in 0..DOOR_SPAWN_ATTEMPTS {
@@ -63,11 +129,39 @@ fn place_random_door(
         let pos = vec2(x as f32, y as f32);
         let dist = pos.distance(player_pos);
         if i != DOOR_SPAWN_ATTEMPTS - 1
-            && (dist < 10.0 || enemies.iter().any(|f| (f.x, f.y) == (x, y)))
+            && (dist < 10.0 || dungeon.enemies.iter().any(|f| (f.x, f.y) == (x, y)))
         {
             continue;
         }
         **tile = Tile::Door;
         break;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use macroquad::texture::{Image, Texture2D};
+
+    use crate::dungeon::{
+        Dungeon,
+        floors::{drunkards_walk, get_random_walkable},
+    };
+
+    #[test]
+    fn test_drunkards_walk() {
+        let dungeon = Dungeon::load_from_file(
+            Image::from_file_with_format(include_bytes!("../../assets/testing_map.png"), None)
+                .unwrap(),
+        );
+        let result = drunkards_walk(&dungeon, dungeon.player_spawn, 5);
+        println!("{result:?}")
+    }
+    #[test]
+    fn test_random_tile() {
+        let dungeon = Dungeon::load_from_file(
+            Image::from_file_with_format(include_bytes!("../../assets/testing_map.png"), None)
+                .unwrap(),
+        );
+        get_random_walkable(&dungeon.tiles);
     }
 }

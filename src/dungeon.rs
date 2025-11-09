@@ -13,7 +13,7 @@ pub const DUNGEON_FLOORS: &[DungeonFloor] = &[FIRST_FLOOR, SECOND_FLOOR];
 type PerRoomFn =
     &'static dyn Fn(usize, usize, usize, usize, &mut Vec<Tile>, &mut Vec<entities::Enemy>);
 
-type PostGenFn = &'static dyn Fn((usize, usize), &mut Vec<Tile>, &mut Vec<entities::Enemy>);
+type PostGenFn = &'static dyn Fn(&mut Dungeon);
 
 pub struct DungeonFloor {
     pub rooms_area: usize,
@@ -26,6 +26,7 @@ pub struct Dungeon {
     pub tiles: Vec<Tile>,
     pub player_spawn: (usize, usize),
     pub enemies: Vec<entities::Enemy>,
+    pub items: Vec<(usize, usize, entities::Item)>,
     pub dungeon_floor: &'static DungeonFloor,
 }
 impl Dungeon {
@@ -35,6 +36,7 @@ impl Dungeon {
         let mut tiles = vec![Tile::Wall; TILES_HORIZONTAL * TILES_VERTICAL];
         let mut player_spawn = (0, 0);
         let mut enemies = Vec::new();
+        let mut items = Vec::new();
         for (index, pixel) in image.get_image_data().iter().enumerate() {
             let x = index % TILES_HORIZONTAL;
             let y = index / TILES_HORIZONTAL;
@@ -66,11 +68,13 @@ impl Dungeon {
             tiles,
             player_spawn,
             enemies,
+            items,
             dungeon_floor: &FIRST_FLOOR,
         }
     }
     pub fn generate_dungeon(dungeon_floor: &'static DungeonFloor) -> Self {
         let mut enemies = Vec::new();
+        let items = Vec::new();
         let mut tiles = vec![Tile::Wall; TILES_HORIZONTAL * TILES_VERTICAL];
 
         let rooms_area = dungeon_floor.rooms_area;
@@ -149,14 +153,15 @@ impl Dungeon {
                 break;
             }
         }
-        (dungeon_floor.post_gen_fn)(player_spawn.unwrap(), &mut tiles, &mut enemies);
-
-        Self {
+        let mut dungeon = Self {
             tiles,
             player_spawn: player_spawn.unwrap(),
             enemies,
+            items,
             dungeon_floor,
-        }
+        };
+        (dungeon_floor.post_gen_fn)(&mut dungeon);
+        dungeon
     }
 
     pub fn pathfind(
