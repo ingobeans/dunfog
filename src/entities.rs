@@ -262,7 +262,7 @@ impl Player {
                 .iter_mut()
                 .find(|f| (f.x, f.y) == (tile_x, tile_y))
                 && let Item::Weapon(weapon) = &self.inventory[0].unwrap_or(Item::Weapon(&MELEE))
-                && weapon.attack_range.contains(&((delta.length()) as usize))
+                && ((delta.length()) as usize) <= weapon.attack_range.clone().max().unwrap()
             {
                 enemy.health -= weapon.base_damage;
                 enemy.was_attacked = true;
