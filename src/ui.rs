@@ -9,16 +9,22 @@ use crate::{
 const UI_BACKGROUND: Color = Color::from_hex(0x8b9bb4);
 const UI_BORDER: Color = Color::from_hex(0xc0cbdc);
 
+pub enum InventoryAction {
+    None,
+    CtxMenuOpen(usize, f32, f32),
+    MovingItem(usize),
+}
+
 pub enum InventoryState {
     Closed,
-    Inventory,
+    Inventory(InventoryAction),
     Crafting,
 }
 impl InventoryState {
     pub fn toggle(&mut self) {
         *self = match self {
-            InventoryState::Closed => InventoryState::Inventory,
-            InventoryState::Inventory => InventoryState::Closed,
+            InventoryState::Closed => InventoryState::Inventory(InventoryAction::None),
+            InventoryState::Inventory(_) => InventoryState::Closed,
             InventoryState::Crafting => InventoryState::Closed,
         }
     }
@@ -144,23 +150,11 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
     let x = (actual_screen_width - (assets.inventory.width() + 8.0) * scale_factor).floor();
     let y =
         ((actual_screen_height - (assets.inventory.height() + 11.0) * scale_factor) / 2.0).floor();
-    if !matches!(state, InventoryState::Closed) {
-        if clicking
-            && (x..x + 15.0 * scale_factor).contains(&mouse_x)
-            && (y..y + 11.0 * scale_factor).contains(&mouse_y)
-        {
-            *state = InventoryState::Inventory
-        }
-        if clicking
-            && (x + 20.0 * scale_factor..x + (20.0 + 15.0) * scale_factor).contains(&mouse_x)
-            && (y..y + 11.0 * scale_factor).contains(&mouse_y)
-        {
-            *state = InventoryState::Crafting
-        }
-    }
 
+    let mut none_action = InventoryAction::None;
     match state {
-        InventoryState::Inventory => {
+        InventoryState::Inventory(action) => {
+            let mut action = action;
             let hovered_index = player.inventory.iter().enumerate().position(|(i, _)| {
                 let (slot_x, slot_y) = slot_index_position(i);
 
@@ -172,9 +166,19 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                         .contains(&mouse_y)
             });
             if clicking && let Some(i) = hovered_index {
-                std::mem::swap(&mut player.inventory[i], &mut player.cursor_item);
-            } else if clicking {
-                // close inventory
+                if let InventoryAction::MovingItem(index) = &action {
+                    (player.inventory[i], player.inventory[*index]) =
+                        (player.inventory[*index], player.inventory[i]);
+                    action = &mut none_action;
+                    *state = InventoryState::Inventory(InventoryAction::None);
+                } else if let InventoryAction::None = &action {
+                    action = &mut none_action;
+                    *state = InventoryState::Inventory(InventoryAction::CtxMenuOpen(
+                        i,
+                        mouse_x - assets.ctx_menu.width() * scale_factor + 2.0 * scale_factor,
+                        mouse_y - assets.ctx_menu.height() * scale_factor + 2.0 * scale_factor,
+                    ));
+                }
             }
 
             draw_texture_ex(
@@ -220,6 +224,11 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                         if !hovered { UI_BORDER } else { UI_BACKGROUND },
                     );
                 }
+                if let InventoryAction::MovingItem(moving_index) = action
+                    && i == *moving_index
+                {
+                    continue;
+                }
                 if let Some(item) = slot {
                     let sprite = item.get_sprite();
                     assets.items.draw_tile(
@@ -235,7 +244,8 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                 }
             }
 
-            if let Some(item) = &player.cursor_item {
+            if let InventoryAction::MovingItem(index) = &action {
+                let item = &player.inventory[*index].unwrap();
                 let sprite = item.get_sprite();
                 assets.items.draw_tile(
                     mouse_x - 4.0 * scale_factor,
@@ -251,25 +261,102 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
 
             if let Some(hover) = hovered_index
                 && let Some(item) = &player.inventory[hover]
+                && let InventoryAction::None = action
             {
                 draw_item_hover_info(item, assets, mouse_x, mouse_y, scale_factor);
             }
+            if let InventoryAction::CtxMenuOpen(item_index, mx, my) = action {
+                let w = assets.ctx_menu.width() * scale_factor;
+                let h = assets.ctx_menu.height() * scale_factor;
+                draw_texture_ex(
+                    &assets.ctx_menu,
+                    *mx,
+                    *my,
+                    WHITE,
+                    DrawTextureParams {
+                        dest_size: Some(vec2(w, h)),
+                        ..Default::default()
+                    },
+                );
+                let player_free_slot = player.get_free_slot();
+                let player_first_free = player.inventory[0].is_none();
+                let item_index = *item_index;
+                let buttons: [(
+                    &str,
+                    &dyn Fn(&Item) -> bool,
+                    &dyn Fn(&mut InventoryState, &mut Player),
+                ); 5] = [
+                    ("Move", &|_| true, &|state, _| {
+                        *state = InventoryState::Inventory(InventoryAction::MovingItem(item_index))
+                    }),
+                    (
+                        "Equip",
+                        &|item| {
+                            matches!(item, Item::Weapon(_))
+                                && if item_index <= 1 {
+                                    player_free_slot.is_some()
+                                } else {
+                                    player_first_free
+                                }
+                        },
+                        &|state, player| {
+                            if item_index <= 1 {
+                                (
+                                    player.inventory[item_index],
+                                    player.inventory[player_free_slot.unwrap()],
+                                ) = (
+                                    player.inventory[player_free_slot.unwrap()],
+                                    player.inventory[item_index],
+                                );
+                            } else {
+                                (player.inventory[item_index], player.inventory[0]) =
+                                    (player.inventory[0], player.inventory[item_index]);
+                            }
+                        },
+                    ),
+                    ("Combine", &|_| true, &|_, _| {}),
+                    ("Throw", &|_| true, &|_, _| {}),
+                    ("Drop", &|_| true, &|_, _| {}),
+                ];
+                let mut any_clicked = false;
+                for (index, (mut text, cond, on_click)) in buttons.into_iter().enumerate() {
+                    let x = *mx + 2.0 * scale_factor;
+                    let y = *my + index as f32 * 7.0 * scale_factor + 2.0 * scale_factor;
+                    let hovered = (x..(x + w)).contains(&mouse_x)
+                        && (y..(y + 7.0 * scale_factor)).contains(&mouse_y);
+
+                    let mut color = if hovered { GOLD } else { WHITE };
+                    let mut disabled = !cond(&player.inventory[item_index].unwrap());
+                    if disabled {
+                        color = GRAY;
+                    }
+                    if !disabled && text == "Equip" && item_index <= 1 {
+                        text = "Unequip";
+                    }
+
+                    draw_text_ex(
+                        text,
+                        x,
+                        y + 6.0 * scale_factor,
+                        TextParams {
+                            color,
+                            font: Some(&assets.font),
+                            font_size: (scale_factor * 6.0) as u16,
+                            ..Default::default()
+                        },
+                    );
+                    if hovered && clicking {
+                        any_clicked = true;
+                        *state = InventoryState::Inventory(InventoryAction::None);
+                        on_click(state, player);
+                        break;
+                    }
+                }
+                if !any_clicked && clicking {
+                    *state = InventoryState::Inventory(InventoryAction::None);
+                }
+            }
         }
-        InventoryState::Crafting => {
-            draw_texture_ex(
-                &assets.crafting,
-                x,
-                y,
-                WHITE,
-                DrawTextureParams {
-                    dest_size: Some(vec2(
-                        assets.crafting.width() * scale_factor,
-                        assets.crafting.height() * scale_factor,
-                    )),
-                    ..Default::default()
-                },
-            );
-        }
-        InventoryState::Closed => {}
+        _ => {}
     }
 }

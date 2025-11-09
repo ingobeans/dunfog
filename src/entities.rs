@@ -99,7 +99,6 @@ pub struct Player {
     pub camera_zoom: f32,
     pub tile_status: Vec<TileStatus>,
     pub inventory: Vec<Option<Item>>,
-    pub cursor_item: Option<Item>,
     pub health: f32,
     pub was_damaged: bool,
 }
@@ -117,7 +116,6 @@ impl Default for Player {
             camera_zoom: 1.0,
             tile_status: vec![TileStatus::Unknown; TILES_HORIZONTAL * TILES_VERTICAL],
             inventory,
-            cursor_item: None,
             health: MAX_PLAYER_HP,
             was_damaged: false,
         }
@@ -325,7 +323,7 @@ impl Player {
 
         None
     }
-    fn get_free_slot(&self) -> Option<usize> {
+    pub fn get_free_slot(&self) -> Option<usize> {
         for (i, slot) in self.inventory.iter().enumerate().skip(2) {
             if slot.is_none() {
                 return Some(i);
