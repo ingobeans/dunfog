@@ -71,6 +71,6 @@ mod tests {
             (0.5, LootEntry::Item(Item::Weapon(&BOW))),
             (0.5, LootEntry::Item(Item::Weapon(&MELEE))),
         ];
-        let choice = weighted_choice(data);
+        weighted_choice(data);
     }
 }

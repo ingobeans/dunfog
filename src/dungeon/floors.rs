@@ -91,11 +91,11 @@ fn drunkards_walk(
         }
         // filter away non walkable tiles
         candidates.retain(|(x, y)| {
-                dungeon.tiles[x + y * TILES_HORIZONTAL].is_walkable()
-                    && !dungeon.enemies.iter().any(|f| (f.x, f.y) == (*x, *y))
-                    && (*x, *y) != dungeon.player_spawn
-                    && !walked.contains(&(*x, *y))
-            });
+            dungeon.tiles[x + y * TILES_HORIZONTAL].is_walkable()
+                && !dungeon.enemies.iter().any(|f| (f.x, f.y) == (*x, *y))
+                && (*x, *y) != dungeon.player_spawn
+                && !walked.contains(&(*x, *y))
+        });
         if candidates.is_empty() {
             break;
         }
@@ -138,7 +138,7 @@ fn place_random_door(dungeon: &mut Dungeon) {
 
 #[cfg(test)]
 mod tests {
-    use macroquad::texture::{Image, Texture2D};
+    use macroquad::texture::Image;
 
     use crate::dungeon::{
         Dungeon,
