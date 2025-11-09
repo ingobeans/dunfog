@@ -88,6 +88,17 @@ pub fn draw_item_hover_info(
             ..Default::default()
         },
     );
+    draw_multiline_text_ex(
+        &item.get_desc(),
+        x + 3.0 * scale_factor,
+        y + 16.0 * scale_factor,
+        None,
+        TextParams {
+            font: Some(&assets.font),
+            font_size: (scale_factor * 4.0) as u16,
+            ..Default::default()
+        },
+    );
 }
 pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets) {
     let (actual_screen_width, actual_screen_height) = screen_size();

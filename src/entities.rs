@@ -28,6 +28,11 @@ pub struct Weapon {
     pub sprite_y: f32,
     pub name: &'static str,
 }
+impl Weapon {
+    fn get_desc(&self) -> String {
+        format!("DMG: {}\nRANGE: {:?}", self.base_damage, self.attack_range)
+    }
+}
 pub const MELEE: Weapon = Weapon {
     attack_range: 0..1,
     base_damage: 1.0,
@@ -62,6 +67,11 @@ impl Item {
     pub fn get_name(&self) -> &'static str {
         match &self {
             Item::Weapon(weapon) => weapon.name,
+        }
+    }
+    pub fn get_desc(&self) -> String {
+        match &self {
+            Item::Weapon(weapon) => weapon.get_desc(),
         }
     }
     // fn unwrap_weapon(&self) -> &'static Weapon {
