@@ -71,11 +71,20 @@ pub struct Weapon {
 }
 impl Weapon {
     fn get_desc(&self) -> String {
-        format!(
-            "DMG: {}\nRANGE: {}",
-            self.base_damage,
-            serialize_range(&self.attack_range)
-        )
+        if let Some((dmg, _)) = self.throwable {
+            format!(
+                "DMG: {}     THROW DMG: {}\nRANGE: {}",
+                self.base_damage,
+                dmg,
+                serialize_range(&self.attack_range)
+            )
+        } else {
+            format!(
+                "DMG: {}\nRANGE: {}",
+                self.base_damage,
+                serialize_range(&self.attack_range)
+            )
+        }
     }
 }
 pub const MELEE: Weapon = Weapon {
@@ -147,6 +156,15 @@ pub struct MiscItem {
     desc: &'static str,
     throwable: Option<(f32, Vec2)>,
     pub consumable: Option<(f32, Option<StatusEffect>)>,
+}
+impl MiscItem {
+    fn get_desc(&self) -> String {
+        if let Some((dmg, _)) = self.throwable {
+            format!("{}\nTHROW DMG: {dmg}", self.desc)
+        } else {
+            self.desc.to_string()
+        }
+    }
 }
 pub const STICK: MiscItem = MiscItem {
     sprite_x: 0.0,
@@ -229,7 +247,7 @@ impl Item {
         match &self {
             Item::Weapon(weapon) => weapon.get_desc(),
             Item::Armor(armor) => armor.get_desc(),
-            Item::Misc(misc_item) => misc_item.desc.to_string(),
+            Item::Misc(misc_item) => misc_item.get_desc(),
         }
     }
     pub fn throwable(&self) -> Option<(f32, Vec2)> {
