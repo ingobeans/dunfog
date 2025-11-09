@@ -473,8 +473,8 @@ pub fn draw_ui(state: &mut InventoryState, player: &mut Player, assets: &Assets)
                     ("Throw", &|item| item.throwable().is_some(), &|state, _| {
                         *state = InventoryState::ThrowingItem(item_index)
                     }),
-                    ("Trash", &|_| true, &|_, player| {
-                        player.inventory[item_index] = None;
+                    ("Drop", &|_| true, &|_, player| {
+                        player.should_drop_item = Some(item_index);
                     }),
                 ];
                 let mut any_clicked = false;

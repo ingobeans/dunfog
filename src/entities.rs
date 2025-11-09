@@ -40,6 +40,7 @@ pub struct Player {
     pub health: f32,
     pub was_damaged: bool,
     pub should_throw_item: Option<(usize, Vec2)>,
+    pub should_drop_item: Option<usize>,
     pub enemies_slayed: u32,
 }
 impl Default for Player {
@@ -62,6 +63,7 @@ impl Default for Player {
             health: MAX_PLAYER_HP,
             was_damaged: false,
             should_throw_item: None,
+            should_drop_item: None,
             enemies_slayed: 0,
         }
     }

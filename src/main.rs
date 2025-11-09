@@ -159,6 +159,14 @@ impl<'a> Dunfog<'a> {
             self.inv_state.toggle();
         }
 
+        if let Some(index) = self.player.should_drop_item {
+            self.player.should_drop_item = None;
+            let item = self.player.inventory[index].take().unwrap();
+            self.dungeon
+                .items
+                .push((self.player.x, self.player.y, item));
+        }
+
         let (mouse_x, mouse_y) = (mouse_x / scale_factor, mouse_y / scale_factor);
         let (mouse_tile_x, mouse_tile_y) = (
             (((mouse_x) / self.player.camera_zoom + self.player.camera_pos.x) / 8.0).floor(),
