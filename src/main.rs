@@ -127,6 +127,7 @@ impl<'a> Dunfog<'a> {
                     let enemies_visible =
                         !self.player.get_visible_enemies(&self.dungeon).is_empty();
                     self.dungeon.particles.clear();
+                    self.dungeon.screen_particles.clear();
 
                     for (k, v) in self.player.status_effects.iter_mut() {
                         if let StatusEffect::Poison = k {
@@ -144,6 +145,7 @@ impl<'a> Dunfog<'a> {
                     } else {
                         self.state = GameState::Idle;
                         self.dungeon.particles.clear();
+                        self.dungeon.screen_particles.clear();
                     }
                 }
             }
@@ -158,6 +160,7 @@ impl<'a> Dunfog<'a> {
                 if *t <= 0.0 {
                     self.state = GameState::Idle;
                     self.dungeon.particles.clear();
+                    self.dungeon.screen_particles.clear();
                 }
             }
         }
@@ -398,6 +401,17 @@ impl<'a> Dunfog<'a> {
                 ..Default::default()
             },
         );
+        for particle in self.dungeon.screen_particles.iter_mut() {
+            particle.draw(
+                self.state.get_time(),
+                self.assets,
+                scale_factor * self.player.camera_zoom,
+                vec2(
+                    -self.player.camera_pos.x * scale_factor * self.player.camera_zoom,
+                    -self.player.camera_pos.y * scale_factor * self.player.camera_zoom,
+                ),
+            );
+        }
 
         ui::draw_ui(
             &mut self.inv_state,

@@ -6,6 +6,7 @@ use crate::entities::*;
 use crate::items::Item;
 use crate::loot::*;
 use crate::particles::Particle;
+use crate::particles::ScreenParticle;
 use crate::utils::*;
 use floors::*;
 
@@ -29,6 +30,7 @@ pub struct Dungeon {
     pub player_spawn: (usize, usize),
     pub enemies: Vec<Enemy>,
     pub particles: Vec<Box<dyn Particle>>,
+    pub screen_particles: Vec<Box<dyn ScreenParticle>>,
     pub items: Vec<(usize, usize, Item)>,
     pub dungeon_floor: &'static DungeonFloor,
 }
@@ -80,6 +82,7 @@ impl Dungeon {
             items,
             dungeon_floor: &FIRST_FLOOR,
             particles: Vec::new(),
+            screen_particles: Vec::new(),
         }
     }
     pub fn generate_dungeon(dungeon_floor: &'static DungeonFloor) -> Self {
@@ -170,6 +173,7 @@ impl Dungeon {
             items,
             dungeon_floor,
             particles: Vec::new(),
+            screen_particles: Vec::new(),
         };
         (dungeon_floor.post_gen_fn)(&mut dungeon);
         dungeon

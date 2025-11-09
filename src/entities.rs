@@ -1,7 +1,11 @@
 use std::{collections::HashMap, f32::consts::PI, sync::LazyLock};
 
 use crate::{
-    GameState, Tile, assets, dungeon::Dungeon, items::*, loot::*, particles::ProjectileParticle,
+    GameState, Tile, assets,
+    dungeon::Dungeon,
+    items::*,
+    loot::*,
+    particles::{ProjectileParticle, ScreenParticle, TextParticle},
     utils::*,
 };
 use macroquad::prelude::*;
@@ -94,7 +98,7 @@ impl Player {
             panic!("invalid consumable");
         }
     }
-    pub fn damage(&mut self, amt: f32) {
+    pub fn damage(&mut self, amt: f32, dungeon: &mut Dungeon) {
         let rng = rand::gen_range(0.0, 1.0);
         if self.inventory[1].is_none_or(|f| {
             if let Item::Armor(armor) = f {
@@ -105,6 +109,17 @@ impl Player {
         }) {
             self.was_damaged = true;
             self.health -= amt;
+            dungeon.screen_particles.push(Box::new(TextParticle {
+                text: format!("-{amt}"),
+                origin: self.draw_pos - vec2(0.0, 4.0),
+                color: RED,
+            }));
+        } else {
+            dungeon.screen_particles.push(Box::new(TextParticle {
+                text: String::from("Dodged!"),
+                origin: self.draw_pos - vec2(0.0, 4.0),
+                color: WHITE,
+            }));
         }
     }
     pub fn draw(&self, assets: &assets::Assets, _time_since_start: f64) {
@@ -231,7 +246,11 @@ impl Player {
                     break;
                 }
                 if let Some(enemy) = dungeon.enemies.iter_mut().find(|f| f.x == tx && f.y == ty) {
-                    if !enemy.damage_throwing(throwable.0, status_effect) {
+                    if !enemy.damage_throwing(
+                        throwable.0,
+                        status_effect,
+                        &mut dungeon.screen_particles,
+                    ) {
                         dungeon.items.push((tx, ty, item));
                     }
                     break;
@@ -270,7 +289,7 @@ impl Player {
                     ))
             {
                 if weapon_in_range {
-                    enemy.damage(weapon.base_damage);
+                    enemy.damage(weapon.base_damage, &mut dungeon.screen_particles);
                     if let Some(particle) = weapon.fires_particle {
                         dungeon.particles.push(Box::new(ProjectileParticle {
                             sprite_x: particle.0,
@@ -348,6 +367,11 @@ impl Player {
             }
         }
         if is_key_pressed(KeyCode::H) {
+            dungeon.screen_particles.push(Box::new(TextParticle {
+                text: String::from("Wait"),
+                origin: self.draw_pos - vec2(0.0, 4.0),
+                color: RED,
+            }));
             return Some(PlayerAction::Wait);
         }
         if is_key_pressed(KeyCode::E) {
@@ -540,10 +564,15 @@ impl Enemy {
             status_effects: HashMap::new(),
         }
     }
-    pub fn damage_throwing(&mut self, amt: f32, status: Option<StatusEffect>) -> bool {
+    pub fn damage_throwing(
+        &mut self,
+        amt: f32,
+        status: Option<StatusEffect>,
+        particles: &mut Vec<Box<dyn ScreenParticle>>,
+    ) -> bool {
         let mut hits = true;
         if amt > 0.0 {
-            hits = self.damage(amt);
+            hits = self.damage(amt, particles);
         }
         if hits && let Some(status) = status {
             if let Some(e) = self.status_effects.get_mut(&status) {
@@ -587,13 +616,23 @@ impl Enemy {
             self.reset_draw_pos();
         }
     }
-    pub fn damage(&mut self, amt: f32) -> bool {
+    pub fn damage(&mut self, amt: f32, particles: &mut Vec<Box<dyn ScreenParticle>>) -> bool {
         let rng = rand::gen_range(0.0, 1.0);
         if !self.awake || self.ty.block_chance < rng {
             self.was_damaged = true;
             self.health -= amt;
+            particles.push(Box::new(TextParticle {
+                text: format!("-{amt}"),
+                origin: self.draw_pos - vec2(0.0, 4.0),
+                color: GREEN,
+            }));
             true
         } else {
+            particles.push(Box::new(TextParticle {
+                text: String::from("Dodged!"),
+                origin: self.draw_pos - vec2(0.0, 4.0),
+                color: RED,
+            }));
             false
         }
     }
@@ -647,7 +686,7 @@ impl Enemy {
                 hit
             };
             if hits {
-                player.damage(self.ty.weapon.base_damage);
+                player.damage(self.ty.weapon.base_damage, dungeon);
 
                 if let Some(particle) = self.ty.weapon.fires_particle {
                     dungeon.particles.push(Box::new(ProjectileParticle {
