@@ -378,6 +378,7 @@ pub struct EnemyType {
     pub max_health: f32,
     pub movement_type: MovementType,
     pub weapon: &'static Weapon,
+    pub show_held_item: bool,
 }
 
 pub static ZOMBIE: EnemyType = EnemyType {
@@ -386,6 +387,7 @@ pub static ZOMBIE: EnemyType = EnemyType {
     max_health: 10.0,
     movement_type: MovementType::ChaseWhenVisible,
     weapon: &MELEE,
+    show_held_item: false,
 };
 pub static SKELETON: EnemyType = EnemyType {
     sprite_x: 0.0,
@@ -393,6 +395,7 @@ pub static SKELETON: EnemyType = EnemyType {
     max_health: 10.0,
     movement_type: MovementType::AlwaysChase,
     weapon: &BOW,
+    show_held_item: false,
 };
 pub static SPIDER: EnemyType = EnemyType {
     sprite_x: 0.0,
@@ -400,6 +403,7 @@ pub static SPIDER: EnemyType = EnemyType {
     max_health: 6.0,
     movement_type: MovementType::AlwaysChase,
     weapon: &MELEE,
+    show_held_item: false,
 };
 
 pub enum EnemyAction {
@@ -596,13 +600,15 @@ impl Enemy {
                 None,
             );
         }
-        assets.items.draw_tile(
-            self.draw_pos.x - 4.0,
-            self.draw_pos.y - 2.0,
-            self.ty.weapon.sprite_x,
-            self.ty.weapon.sprite_y,
-            None,
-        );
+        if self.ty.show_held_item {
+            assets.items.draw_tile(
+                self.draw_pos.x - 4.0,
+                self.draw_pos.y - 2.0,
+                self.ty.weapon.sprite_x,
+                self.ty.weapon.sprite_y,
+                None,
+            );
+        }
 
         // if let Some(target) = &self.last_pathfind_target {
         //     draw_rectangle_lines(target.x * 8.0, target.y * 8.0, 8.0, 8.0, 2.0, RED);
