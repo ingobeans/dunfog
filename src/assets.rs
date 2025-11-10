@@ -16,6 +16,8 @@ pub struct Assets {
     pub gravestone: Texture2D,
     pub tooltip: Texture2D,
     pub win_screen: Texture2D,
+    pub inv_icon: Texture2D,
+    pub inv_icon_hovered: Texture2D,
 }
 impl Default for Assets {
     fn default() -> Self {
@@ -31,6 +33,11 @@ impl Default for Assets {
             particles: Spritesheet::new(
                 load_ase_texture(include_bytes!("../assets/particles.ase"), None),
                 8.0,
+            ),
+            inv_icon: load_ase_texture(include_bytes!("../assets/inv_icon.ase"), None),
+            inv_icon_hovered: load_ase_texture(
+                include_bytes!("../assets/inv_icon_hovered.ase"),
+                None,
             ),
             tooltip: load_ase_texture(include_bytes!("../assets/tooltip.ase"), None),
             gravestone: load_ase_texture(include_bytes!("../assets/gravestone.ase"), None),

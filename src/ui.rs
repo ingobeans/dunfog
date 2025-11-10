@@ -671,6 +671,32 @@ pub fn draw_ui(
             }
         },
     }
+
+    let w = assets.inv_icon.width();
+    let h = assets.inv_icon.height();
+    let x = actual_screen_width - (w + 2.0) * scale_factor;
+    let y = actual_screen_height - (h + 2.0) * scale_factor;
+    let hovered = (x..x + w * scale_factor).contains(&mouse_x)
+        && (y..y + h * scale_factor).contains(&mouse_y);
+
+    if hovered && is_mouse_button_pressed(MouseButton::Left) {
+        state.toggle();
+    }
+
+    draw_texture_ex(
+        if !hovered {
+            &assets.inv_icon
+        } else {
+            &assets.inv_icon_hovered
+        },
+        x,
+        y,
+        WHITE,
+        DrawTextureParams {
+            dest_size: Some(vec2(w * scale_factor, h * scale_factor)),
+            ..Default::default()
+        },
+    );
 }
 
 fn item_can_go_in_slot(item: &Option<Item>, slot: usize) -> bool {
