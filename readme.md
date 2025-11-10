@@ -7,6 +7,8 @@ Dunfog is an old-school style roguelike with turn based combat, item crafting, p
 
 Made for hackclub's siege! entire project took nearly 30 hours (in one week!)
 
+Made in rust :)
+
 ## Controls!
 
 click on a tile to move there, click on an enemy (within range of your weapon) to attack it.
