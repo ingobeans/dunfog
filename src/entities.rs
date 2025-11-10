@@ -47,10 +47,7 @@ pub struct Player {
 impl Default for Player {
     fn default() -> Self {
         let mut inventory = vec![None; 14];
-        inventory[0] = Some(Item::Weapon(&IRON_SWORD));
-        inventory[1] = Some(Item::Armor(&IRON_ARMOR));
-        inventory[2] = Some(Item::Misc(&STICK));
-        inventory[3] = Some(Item::Misc(&STONE));
+        inventory[0] = Some(Item::Weapon(&DAGGER));
         Self {
             active_action: None,
             moving_to: Vec::new(),
