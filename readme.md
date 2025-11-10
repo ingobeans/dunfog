@@ -1,5 +1,8 @@
 # Dunfog
 
+<img width="1918" height="1003" alt="Y0lsx2" src="https://github.com/user-attachments/assets/24190614-d210-4ac2-af4d-73e985af6be4" />
+
+
 Dunfog is an old-school style roguelike with turn based combat, item crafting, procedurally generated floors, and a boss at the end!
 
 Made for hackclub's siege! entire project took nearly 30 hours (in one week!)
