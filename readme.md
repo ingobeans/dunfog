@@ -1,8 +1,15 @@
-# dunfog
+# Dunfog
 
-dunfog is an old-school style roguelike with turn based combat, item crafting, and a boss at the end!
+Dunfog is an old-school style roguelike with turn based combat, item crafting, procedurally generated floors, and a boss at the end!
 
-made for hackclub's siege! entire project took nearly 30 hours (in one week!)
+Made for hackclub's siege! entire project took nearly 30 hours (in one week!)
+
+## Controls!
+
+click on a tile to move there, click on an enemy (within range of your weapon) to attack it.
+
+​use F to open Inventory. use E (when prompted) to interact with a tile.
+
 
 ## Building from source
 
