@@ -15,6 +15,11 @@ click on a tile to move there, click on an enemy (within range of your weapon) t
 
 ​use F to open Inventory. use E (when prompted) to interact with a tile.
 
+## Mechanics
+
+Many items can be combined together to create something new. This can be used to create better gear and weapons. Click an item in your inventory, and if it can be crafted together with something else, the "Combine" menu item should be available.
+
+Some items/weapons can also be thrown. If it hits an enemy, it is however destroyed and can't be used again. Poisonous items will when thrown poison the enemy it hits.
 
 ## Building from source
 
