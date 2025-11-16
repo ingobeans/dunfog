@@ -15,6 +15,8 @@ click on a tile to move there, click on an enemy (within range of your weapon) t
 
 ​use F to open Inventory. use E (when prompted) to interact with a tile.
 
+You can zoom in and out by scrolling, and drag with middle-mouse-button to pan around the dungeon.
+
 ## Mechanics
 
 Many items can be combined together to create something new. This can be used to create better gear and weapons. Click an item in your inventory, and if it can be crafted together with something else, the "Combine" menu item should be available.
